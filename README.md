@@ -1,192 +1,318 @@
-#  **Casper Linux WMI Driver** 
-Welcome to the **ultimate Linux kernel module** for **Casper Excalibur laptops**! Take full control of your keyboard backlight and hardware monitoring with this powerful, feature-packed driver. Let's light up your laptop experience! ✨
+# Casper Excalibur WMI Driver
 
----
+<div align="center">
 
-## 🚀 **Features**
+![Linux](https://img.shields.io/badge/Linux-FCC624?style=for-the-badge&logo=linux&logoColor=black)
+![C](https://img.shields.io/badge/c-%2300599C.svg?style=for-the-badge&logo=c&logoColor=white)
+![Python](https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54)
 
-This driver unleashes the full potential of your Casper Excalibur laptop, bringing advanced hardware control directly to your fingertips:
+**Complete WMI driver and control panel for Casper Excalibur gaming laptops**
 
-### ⌨️ **Keyboard Backlight Control**  
-- **Full RGB control** via `/sys/class/leds/casper::kbd_backlight/` interface for stunning visual customization.
+*Control RGB keyboard backlight, monitor system temperatures, and manage power profiles*
 
-### 📊 **Hardware Monitoring**  
-- **Real-time fan speeds** and **PWM control** through the hwmon interface for optimal thermal management.
-- **Power plan management** to optimize performance and battery life.
+</div>
 
-### 🔧 **Multi-Model Support**  
-- **Broad compatibility** across multiple Casper Excalibur models with intelligent hardware detection.
+## Overview
 
-### 🔍 **Smart Detection**  
-- **DMI-based model detection** ensures proper driver behavior for your specific laptop variant.
+This project provides a comprehensive Linux driver solution for Casper Excalibur gaming laptops. It includes a kernel WMI module for hardware interaction and a feature-rich TUI control panel for managing laptop settings.
 
----
+### Key Features
 
-## 🛠️ **Installation Guide**
+- **RGB Keyboard Backlight Control** - Full control over 8 different lighting modes with custom colors
+- **Hardware Monitoring** - Real-time CPU and GPU fan speed monitoring
+- **Power Profile Management** - Integration with power-profiles-daemon
+- **Multi-Region Support** - Control up to 9 keyboard lighting regions
+- **Preset Effects** - Pre-configured lighting effects for gaming and productivity
+- **System Integration** - Desktop entry and passwordless LED control
 
-Ready to supercharge your **Casper Excalibur** with advanced hardware control? Follow these steps for the ultimate setup:
+## Supported Models
+
+| Model | CPU Generation | Status |
+|-------|---------------|---------|
+| EXCALIBUR G650 | Various | ✅ Supported |
+| EXCALIBUR G750 | Various | ✅ Supported |
+| EXCALIBUR G670 | Various | ✅ Supported |
+| EXCALIBUR G900 | 10th gen+ Intel | ✅ Supported |
+
+> **Note**: For Intel CPUs older than 10th generation, please contact the maintainer for compatibility information.
+
+## Installation
 
 ### Prerequisites
-- **Linux kernel headers** for your current kernel version
-- **Build tools** (`make`, `gcc`, etc.)
-- **Root access** for module installation
 
-### Quick Installation
+Ensure you have the required dependencies installed:
 
-1. **Clone and build the module**:
-    ```bash
-    git clone https://github.com/kyrasarii/casper-wmi.git
-    cd casper-wmi
-    make
-    ```
-
-2. **Test the module** (quick verification):
-    ```bash
-    sudo insmod casper-wmi.ko
-    ```
-
-3. **Test keyboard backlight magic**:
-    ```bash
-    echo "372ffffff" | sudo tee /sys/class/leds/casper::kbd_backlight/led_control
-    ```
-
-### Permanent Installation (Recommended)
-
-For the **ultimate experience** with automatic loading on every boot:
-
-1. **Install with proper compression**:
-    ```bash
-    sudo zstd casper-wmi.ko -o /lib/modules/$(uname -r)/kernel/drivers/platform/x86/casper-wmi.ko.zst
-    ```
-
-2. **Update module dependencies** (crucial step!):
-    ```bash
-    sudo depmod -a
-    ```
-
-3. **Set up automatic loading**:
-    ```bash
-    sudo nano /etc/modules-load.d/casper-wmi.conf
-    ```
-    
-    Add this magic line:
-    ```
-    casper-wmi
-    ```
-
-4. **Verify manual loading** (optional but recommended):
-    ```bash
-    sudo modprobe casper-wmi
-    lsmod | grep casper
-    ```
-
-5. **Test the boot process**:
-    ```bash
-    sudo modprobe -r casper-wmi  # Unload for testing
-    sudo reboot
-    ```
-
-6. **Confirm success**:
-    ```bash
-    lsmod | grep casper
-    ```
-
----
-
-## 🎮 **Usage & Control**
-
-Your laptop is now **supercharged**! Here's how to harness its power:
-
-### 🌈 **LED Control**
-- **Keyboard backlight interface**: `/sys/class/leds/casper::kbd_backlight/led_control`
-- **Zone-specific control**: Send hex values for precise RGB customization
-- **Multiple lighting modes**: Explore different effects and patterns
-
-### LED Control Format
-The control panel uses the casper-wmi format: `[regions][mode][brightness][color]`
-
-**Example**: `372ffffff`
-
-#### 🔢 **Control String Breakdown**:
-- **1st Digit (`3`)**: **Regions** - Defines which regions of the keyboard to control
-- **2nd Digit (`7`)**: **Mode** - LED effect mode (0-7, where 0=off, 1-7=various effects)  
-- **3rd Digit (`2`)**: **Brightness** - Intensity level (0=off, 1=dim, 2=bright)
-- **Last 6 Digits (`ffffff`)**: **Color** - RGB hex code for static modes
-
-#### 🎨 **Important Color Behavior**:
-- **Static Mode (Mode 1)**: The hex color code determines the exact RGB color displayed
-- **Dynamic Modes (Modes 2-7)**: The hex color code is **overridden** by the mode's built-in color patterns
-- **Experimentation Tip**: For rainbow and breathing effects, the color value may influence the base hue, but results vary by mode
-
-### Available LED Modes
-| Mode | Effect | Description |
-|------|--------|-------------|
-| `0` | Off | Completely disabled |
-| `1` | Static | Solid color |
-| `2` | Blinking | Regular on/off pattern |
-| `3` | Breathing | Smooth fade in/out |
-| `4` | Pulsing | Quick pulse effect |
-| `5` | Rainbow Pulsing | Color-shifting pulse |
-| `6` | Rainbow Pulsing Alt | Alternative rainbow pulse |
-| `7` | Rainbow Wave | Flowing rainbow effect |
-
-### 🌡️ **Hardware Monitoring**
-- **Fan speeds**: Monitor via hwmon interface (`/sys/class/hwmon/hwmon*/`)
-- **Power management**: Access and control power plans for optimal performance
-- **Real-time data**: Get live hardware statistics and thermal information
-
-### 🔧 **Advanced Configuration**
-- **Custom commands**: Hex values for LED zones defined in `casper-wmi.c`
-- **Hardware info access**: Complete system monitoring capabilities
-- **Performance tuning**: Fine-tune your laptop's behavior
-
----
-
-## 🔍 **Troubleshooting**
-
-Having issues? No worries! Here's your **debug toolkit**:
-
-### Common Solutions
-- **Check kernel messages**: `dmesg | grep casper` for detailed driver information
-- **Verify module loading**: `lsmod | grep casper` to confirm the driver is active
-- **Missing sysfs interface?** Ensure your laptop model is supported and the module loaded correctly
-- **BIOS compatibility**: Check the DMI table in `casper-wmi.c` for your specific model
-
-### Quick Diagnostics
 ```bash
-# Check if module is loaded
-lsmod | grep casper
+# Ubuntu/Debian
+sudo apt update && sudo apt install build-essential gcc linux-headers-$(uname -r) zstd python3
 
-# View driver messages
-dmesg | tail -20
+# Fedora/RHEL
+sudo dnf install kernel-devel gcc make zstd python3
 
-# Verify sysfs interface
+# Arch Linux
+sudo pacman -S linux-headers gcc make zstd python3
+```
+
+### Quick Install
+
+1. Clone the repository:
+```bash
+git clone https://github.com/yourusername/casper-excalibur-wmi
+cd casper-excalibur-wmi
+```
+
+2. Run the universal installer:
+```bash
+sudo ./install.sh
+```
+
+### Installation Options
+
+```bash
+sudo ./install.sh                # Install both driver and control panel
+sudo ./install.sh --driver-only  # Install only the WMI driver
+sudo ./install.sh --panel-only   # Install only the control panel
+sudo ./install.sh --uninstall    # Remove all components
+```
+
+### Post-Installation
+
+After installation, reboot your system for the driver to auto-load:
+```bash
+sudo reboot
+```
+
+## Usage
+
+### Control Panel
+
+Launch the TUI control panel:
+```bash
+excalibur
+```
+
+The control panel provides access to:
+
+- **Power Profile**: Switch between power-saver, balanced, and performance modes
+- **Keyboard Backlight**: Basic brightness and mode control
+- **RGB Color Control**: Choose from preset colors or custom RGB values
+- **Preset Effects**: Apply pre-configured lighting effects
+- **System Info**: View hardware information and driver status
+
+### Direct LED Control
+
+For advanced users, control the keyboard backlight directly:
+
+```bash
+# Control string format: [regions][mode][brightness][color]
+# Example: 3 regions, static mode, max brightness, white color
+echo "312ffffff" | sudo tee /sys/class/leds/casper::kbd_backlight/led_control
+```
+
+#### Control String Reference
+
+| Component | Range | Description |
+|-----------|-------|-------------|
+| Regions | 1-9 | Number of keyboard regions |
+| Mode | 0-7 | Lighting mode (see modes table) |
+| Brightness | 0-2 | Brightness level |
+| Color | 000000-ffffff | RGB color in hex |
+
+#### Available Modes
+
+| Mode | Name | Description |
+|------|------|-------------|
+| 0 | Off | Keyboard backlight disabled |
+| 1 | Static | Solid color lighting |
+| 2 | Blinking | Blinking effect |
+| 3 | Breathing | Smooth fade in/out |
+| 4 | Pulsing | Quick pulse effect |
+| 5 | Rainbow Pulsing | Rainbow color pulsing |
+| 6 | Rainbow Pulsing Alt | Alternative rainbow pulse |
+| 7 | Rainbow Wave | Moving rainbow wave |
+
+### Hardware Monitoring
+
+The driver exposes fan speeds through the standard hwmon interface:
+
+```bash
+# View fan speeds
+sensors casper_wmi-*
+
+# Example output:
+# casper_wmi-wmi-0
+# Adapter: WMI adapter
+# cpu_fan_speed:   2800 RPM
+# gpu_fan_speed:   2400 RPM
+```
+
+## Architecture
+
+### WMI Driver (`casper-wmi.c`)
+
+The kernel module provides:
+
+- **WMI Interface**: Communicates with laptop ACPI/WMI firmware
+- **LED Class Device**: Standard Linux LED interface for keyboard backlight
+- **Hardware Monitoring**: hwmon interface for fan speed monitoring
+- **Power Management**: Integration with ACPI power profiles
+
+### Control Panel (`excalibur.py`)
+
+The TUI application offers:
+
+- **Curses-based Interface**: Terminal-based user interface
+- **Real-time Monitoring**: Live system information updates
+- **Power Profile Integration**: Works with power-profiles-daemon
+- **Preset Management**: Pre-configured lighting effects
+- **Color Picker**: Interactive RGB color selection
+
+### Universal Installer (`install.sh`)
+
+The installer script handles:
+
+- **Dependency Checking**: Validates required packages
+- **Module Compilation**: Builds and installs kernel module
+- **System Integration**: Creates desktop entries and sudoers rules
+- **Auto-loading**: Configures module to load at boot
+
+## Technical Details
+
+### WMI Communication
+
+The driver uses ACPI WMI GUID `644C5791-B7B0-4123-A90B-E93876E0DAAD` to communicate with the laptop firmware. Key operations include:
+
+- `CASPER_SET_LED (0x0100)`: Control keyboard lighting
+- `CASPER_GET_HARDWAREINFO (0x0200)`: Read hardware sensors
+- `CASPER_POWERPLAN (0x0300)`: Manage power profiles
+
+### LED Control Protocol
+
+The LED control uses a 9-character hexadecimal string:
+- 1 digit: Number of regions (1-9)
+- 1 digit: Mode (0-7)
+- 1 digit: Brightness (0-2)
+- 6 digits: RGB color (RRGGBB)
+
+### Fan Speed Handling
+
+Different laptop models require different fan speed calculation methods:
+- Newer models: Raw RPM values
+- Older models: Byte-swapped values requiring correction
+
+## Development
+
+### Building from Source
+
+```bash
+# Build kernel module
+make clean
+make
+
+# Test without installing
+sudo insmod casper-wmi.ko
+
+# Remove module
+sudo rmmod casper-wmi
+```
+
+### Debugging
+
+Enable debug output:
+```bash
+# Load module with debug info
+sudo modprobe casper-wmi
+dmesg | grep casper-wmi
+```
+
+Check LED interface:
+```bash
+# Verify LED control file exists
 ls -la /sys/class/leds/casper::kbd_backlight/
 ```
 
+## Troubleshooting
+
+### Common Issues
+
+**Module fails to load:**
+```bash
+# Check if WMI GUID is available
+ls /sys/bus/wmi/devices/ | grep 644C5791-B7B0-4123-A90B-E93876E0DAAD
+
+# Check kernel logs
+dmesg | grep -i casper
+```
+
+**LED control not working:**
+```bash
+# Verify driver is loaded
+lsmod | grep casper_wmi
+
+# Check permissions
+ls -la /sys/class/leds/casper::kbd_backlight/led_control
+```
+
+**Control panel crashes:**
+```bash
+# Run with error output
+python3 excalibur.py
+
+# Check dependencies
+powerprofilesctl --help
+```
+
+### Getting Help
+
+If you encounter issues:
+
+1. Check the troubleshooting section above
+2. Verify your laptop model is supported
+3. Review kernel logs with `dmesg`
+4. Open an issue with system information:
+   - Laptop model (`sudo dmidecode -s system-product-name`)
+   - Kernel version (`uname -r`)
+   - Distribution (`lsb_release -a`)
+
+## Contributing
+
+Contributions are welcome! Areas where help is needed:
+
+- **Device Support**: Adding support for new Casper Excalibur models
+- **Feature Enhancement**: Additional lighting effects and controls
+- **Testing**: Validation on different hardware configurations
+- **Documentation**: Improving guides and troubleshooting
+
+### Development Setup
+
+```bash
+git clone https://github.com/yourusername/casper-excalibur-wmi
+cd casper-excalibur-wmi
+
+# Create development branch
+git checkout -b feature/your-feature
+
+# Test your changes
+sudo ./install.sh --uninstall  # Remove existing installation
+sudo ./install.sh              # Install your changes
+```
+
+## License
+
+This project is licensed under the GPL-3.0 License. See the [LICENSE](LICENSE) file for details.
+
+## Acknowledgments
+
+- Linux kernel WMI subsystem developers
+- Casper community for hardware information and testing
+- Contributors who helped identify supported models
+
 ---
 
-## 🤝 **Contributing**
+<div align="center">
 
-Join the **Casper WMI community**! We welcome contributions that make this driver even better:
+**Made with ❤️ for the Linux gaming community**
 
-- **🐛 Bug Reports**: Found an issue? Let us know!
-- **🚀 Feature Requests**: Have ideas for new functionality?
-- **💻 Code Contributions**: Pull requests for bug fixes and improvements
-- **📱 Model Support**: Help us add support for more Casper Excalibur variants
-- **📚 Documentation**: Improve guides and examples
+[Report Bug](https://github.com/yourusername/casper-excalibur-wmi/issues) • [Request Feature](https://github.com/yourusername/casper-excalibur-wmi/issues) • [Contribute](https://github.com/yourusername/casper-excalibur-wmi/pulls)
 
----
-
-## 🙏 **Credits & Acknowledgements**
-
-A huge thank you to:
-
-- **Linux Kernel Community**: For providing the foundation and APIs that make this possible
-- **Casper Excalibur Users**: For testing, feedback, and feature requests
-- **WMI Subsystem Developers**: For the excellent framework this driver builds upon
-- **Open Source Community**: For the collaborative spirit that drives innovation
-
----
-
-Transform your **Casper Excalibur** into the ultimate Linux powerhouse! If you have any questions, issues, or want to contribute, don't hesitate to open an issue or pull request. Happy hacking! 🚀💖
+</div>

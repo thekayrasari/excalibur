@@ -1,299 +1,281 @@
-# 🗡️ Casper Excalibur WMI Driver
+# ⚔️ Excalibur - Casper Gaming Laptop Linux Driver
 
-**🎮 Complete WMI driver and control panel for Casper Excalibur gaming laptops**
+**🌈 Complete Linux WMI driver and control panel for Casper Excalibur gaming laptops**
 
-*Control RGB keyboard backlight, monitor system temperatures, and manage power profiles*
+*Transform your Casper gaming experience on Linux with full RGB control, hardware monitoring, and power management*
 
-## ✨ Features
+</div>
 
-- **🌈 RGB Keyboard Backlight Control** - Full control over 8 different lighting modes with custom colors
-- **📊 Hardware Monitoring** - Real-time CPU and GPU fan speed monitoring  
-- **⚡ Power Profile Management** - Integration with power-profiles-daemon
-- **🌍 Multi-Region Support** - Control up to 9 keyboard lighting regions
-- **🎨 Preset Effects** - Pre-configured lighting effects for gaming and productivity
-- **🔧 System Integration** - Desktop entry and passwordless LED control
-- **🚀 Performance Optimized** - Lightweight kernel module with minimal overhead
-- **📱 TUI Control Panel** - Beautiful terminal-based interface
+---
 
-## 🚀 Quick Installation
+## ✨ What is Excalibur?
 
-### Prerequisites
-Make sure you have the required dependencies installed:
+Excalibur is a **comprehensive Linux driver solution** for Casper Excalibur gaming laptops that unlocks the full potential of your hardware on Linux systems. This project bridges the gap between Casper's Windows-focused features and the Linux gaming community, providing native kernel-level support for advanced laptop controls.
+
+## 🎯 Key Features
+
+### 🌈 **RGB Keyboard Mastery**
+- **8 Dynamic Lighting Modes**: From static colors to mesmerizing rainbow waves
+- **9-Region Control**: Fine-grained control over different keyboard zones
+- **Custom Color Support**: Full RGB spectrum with hex color codes
+- **Preset Effects**: Gaming and productivity lighting profiles
+
+### 📊 **Hardware Monitoring**
+- **Real-time Fan Speeds**: Monitor CPU and GPU fan RPM through standard `hwmon` interface
+- **Temperature Awareness**: Keep track of system thermal performance
+- **Hardware Sensor Integration**: Native Linux sensor framework support
+
+### ⚡ **Power Profile Management**
+- **Seamless Integration**: Works with `power-profiles-daemon`
+- **Performance Modes**: Power-saver, balanced, and performance profiles
+- **Battery Optimization**: Intelligent power management for mobile gaming
+
+### 🎮 **Gaming-First Design**
+- **Minimal Overhead**: Lightweight kernel module optimized for gaming performance
+- **Zero Latency**: Direct WMI communication with laptop firmware
+- **System Integration**: Desktop entries and passwordless LED control
+
+---
+
+## 🚀 Quick Start
+
+### 📋 Prerequisites
+
+Ensure you have the required dependencies for your distribution:
 
 ```bash
 # 🐧 Ubuntu/Debian
 sudo apt update && sudo apt install build-essential gcc linux-headers-$(uname -r) zstd python3
 
-# 🎩 Fedora/RHEL  
+# 🎩 Fedora/RHEL
 sudo dnf install kernel-devel gcc make zstd python3
 
 # 🏹 Arch Linux
 sudo pacman -S linux-headers gcc make zstd python3
 ```
 
-### ⚡ One-Click Setup
-
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/yourusername/casper-excalibur-wmi
-   cd casper-excalibur-wmi
-   ```
-
-2. **Run the universal installer**
-   ```bash
-   sudo ./install.sh
-   ```
-
-3. **Reboot and enjoy!**
-   ```bash
-   sudo reboot
-   ```
-
-### 🎛️ Installation Options
+### ⚡ Installation
 
 ```bash
-sudo ./install.sh                # 📦 Install both driver and control panel
-sudo ./install.sh --driver-only  # 🔧 Install only the WMI driver
-sudo ./install.sh --panel-only   # 🖥️  Install only the control panel
-sudo ./install.sh --uninstall    # 🗑️  Remove all components
+# Clone the repository
+git clone https://github.com/sarikayra/excalibur.git
+cd excalibur
+
+# Run the universal installer
+sudo ./install.sh
+
+# Reboot and enjoy!
+sudo reboot
 ```
 
-## 🎯 Usage
+### 🎛️ Launch Control Panel
 
-### 🖥️ Control Panel
-
-Launch the beautiful TUI control panel:
 ```bash
 excalibur
 ```
 
-The control panel provides access to:
+---
 
-- **⚡ Power Profile**: Switch between power-saver, balanced, and performance modes
-- **💡 Keyboard Backlight**: Basic brightness and mode control
-- **🎨 RGB Color Control**: Choose from preset colors or custom RGB values
-- **✨ Preset Effects**: Apply pre-configured lighting effects
-- **📊 System Info**: View hardware information and driver status
+## 🎨 RGB Control Guide
 
-### 🎨 Direct LED Control
+### 🖥️ **TUI Control Panel**
+The beautiful terminal-based interface provides:
+- ⚡ **Power Profile Switching**: Performance modes at your fingertips
+- 💡 **Backlight Control**: Brightness and mode adjustments
+- 🎨 **RGB Color Picker**: Interactive color selection
+- ✨ **Preset Effects**: One-click lighting configurations
+- 📊 **System Information**: Real-time hardware status
 
-For power users, control the keyboard backlight directly:
+### 🔧 **Manual Control**
+
+For power users who want direct control:
 
 ```bash
 # Control string format: [regions][mode][brightness][color]
-# Example: 3 regions, static mode, max brightness, white color
-echo "312ffffff" | sudo tee /sys/class/leds/casper::kbd_backlight/led_control
+# Example: 3 regions, rainbow wave, max brightness, purple theme
+echo "372ff00ff" | sudo tee /sys/class/leds/casper::kbd_backlight/led_control
 ```
 
-#### 🔧 Control String Reference
+### 🎭 **Lighting Modes**
 
-| Component | Range | Description |
-|-----------|-------|-------------|
-| 🌍 Regions | 1-9 | Number of keyboard regions |
-| 🎭 Mode | 0-7 | Lighting mode (see modes table) |
-| ☀️ Brightness | 0-2 | Brightness level |
-| 🎨 Color | 000000-ffffff | RGB color in hex |
+| Mode | Effect | Perfect For |
+|------|--------|-------------|
+| 🔴 **0** - Off | No lighting | Battery saving |
+| 🟢 **1** - Static | Solid color | Professional work |
+| 🔵 **2** - Blinking | Attention-grabbing blink | Notifications |
+| 🟡 **3** - Breathing | Smooth fade in/out | Relaxed gaming |
+| 🟠 **4** - Pulsing | Quick pulse effect | High-intensity gaming |
+| 🌈 **5** - Rainbow Pulse | Dynamic rainbow | Streaming/content creation |
+| 🎪 **6** - Rainbow Alt | Alternative rainbow | Customization variety |
+| 🌊 **7** - Rainbow Wave | Moving wave effect | Immersive gaming |
 
-#### ✨ Available Lighting Modes
+---
 
-| Mode | Name | Description |
-|------|------|-------------|
-| 0 | 🔴 Off | Keyboard backlight disabled |
-| 1 | 🟢 Static | Solid color lighting |
-| 2 | 🔵 Blinking | Blinking effect |
-| 3 | 🟡 Breathing | Smooth fade in/out |
-| 4 | 🟠 Pulsing | Quick pulse effect |
-| 5 | 🌈 Rainbow Pulsing | Rainbow color pulsing |
-| 6 | 🎪 Rainbow Pulsing Alt | Alternative rainbow pulse |
-| 7 | 🌊 Rainbow Wave | Moving rainbow wave |
+## 📊 Hardware Monitoring
 
-### 📊 Hardware Monitoring
-
-The driver exposes fan speeds through the standard hwmon interface:
+View your laptop's thermal performance with standard Linux tools:
 
 ```bash
-# View fan speeds
+# Check fan speeds
 sensors casper_wmi-*
 
 # Example output:
 # casper_wmi-wmi-0
 # Adapter: WMI adapter
-# cpu_fan_speed:   2800 RPM  🌀
-# gpu_fan_speed:   2400 RPM  🎮
+# cpu_fan_speed: 2800 RPM 🌀
+# gpu_fan_speed: 2400 RPM 🎮
 ```
 
-## 🏗️ Architecture
+---
 
-### 🔧 WMI Driver (`casper-wmi.c`)
+## 🏗️ Technical Architecture
 
-The kernel module provides:
+### 🔌 **Kernel Module Components**
+- **WMI Interface**: Direct communication with laptop ACPI/WMI firmware
+- **LED Class Device**: Standard Linux LED interface integration
+- **Hardware Monitor**: Native `hwmon` interface for thermal data
+- **Power Management**: ACPI power profile integration
 
-- **🔌 WMI Interface**: Communicates with laptop ACPI/WMI firmware
-- **💡 LED Class Device**: Standard Linux LED interface for keyboard backlight
-- **📊 Hardware Monitoring**: hwmon interface for fan speed monitoring
-- **⚡ Power Management**: Integration with ACPI power profiles
+### 🖼️ **TUI Application Features**
+- **Curses-based Interface**: Beautiful, responsive terminal UI
+- **Real-time Updates**: Live system monitoring and feedback
+- **Cross-platform Compatibility**: Works across all major Linux distributions
 
-### 🖥️ Control Panel (`excalibur.py`)
+### 📡 **WMI Communication**
+- **GUID**: `644C5791-B7B0-4123-A90B-E93876E0DAAD`
+- **LED Control**: `CASPER_SET_LED (0x0100)`
+- **Hardware Info**: `CASPER_GET_HARDWAREINFO (0x0200)`
+- **Power Plans**: `CASPER_POWERPLAN (0x0300)`
 
-The TUI application offers:
+---
 
-- **🖼️ Curses-based Interface**: Beautiful terminal-based user interface
-- **📊 Real-time Monitoring**: Live system information updates
-- **⚡ Power Profile Integration**: Works with power-profiles-daemon
-- **✨ Preset Management**: Pre-configured lighting effects
-- **🎨 Color Picker**: Interactive RGB color selection
+## 🛠️ Installation Options
 
-### 📦 Universal Installer (`install.sh`)
+The flexible installer supports various installation scenarios:
 
-The installer script handles:
+```bash
+sudo ./install.sh                 # 📦 Complete installation
+sudo ./install.sh --driver-only   # 🔧 Kernel module only
+sudo ./install.sh --panel-only    # 🖥️ Control panel only
+sudo ./install.sh --uninstall     # 🗑️ Clean removal
+```
 
-- **✅ Dependency Checking**: Validates required packages
-- **🔨 Module Compilation**: Builds and installs kernel module
-- **🔧 System Integration**: Creates desktop entries and sudoers rules
-- **🚀 Auto-loading**: Configures module to load at boot
+---
 
-## 🔬 Technical Details
+## 🧪 Development & Testing
 
-### 🔌 WMI Communication
-
-The driver uses ACPI WMI GUID `644C5791-B7B0-4123-A90B-E93876E0DAAD` to communicate with the laptop firmware. Key operations include:
-
-- `CASPER_SET_LED (0x0100)`: 💡 Control keyboard lighting
-- `CASPER_GET_HARDWAREINFO (0x0200)`: 📊 Read hardware sensors
-- `CASPER_POWERPLAN (0x0300)`: ⚡ Manage power profiles
-
-### 💡 LED Control Protocol
-
-The LED control uses a 9-character hexadecimal string:
-- 1 digit: 🌍 Number of regions (1-9)
-- 1 digit: 🎭 Mode (0-7)  
-- 1 digit: ☀️ Brightness (0-2)
-- 6 digits: 🎨 RGB color (RRGGBB)
-
-### 🌀 Fan Speed Handling
-
-Different laptop models require different fan speed calculation methods:
-- **Newer models**: Raw RPM values
-- **Older models**: Byte-swapped values requiring correction
-
-## 🛠️ Development
-
-### 🏗️ Building from Source
+### 🔨 **Building from Source**
 
 ```bash
 # Build kernel module
-make clean
-make
+make clean && make
 
 # Test without installing
 sudo insmod casper-wmi.ko
 
-# Remove module
+# Remove test module
 sudo rmmod casper-wmi
 ```
 
-### 🐛 Debugging
+### 🐛 **Debug Mode**
 
-Enable debug output:
 ```bash
-# Load module with debug info
+# Enable debug output
 sudo modprobe casper-wmi
 dmesg | grep casper-wmi
-```
 
-Check LED interface:
-```bash
-# Verify LED control file exists
+# Check LED interface
 ls -la /sys/class/leds/casper::kbd_backlight/
 ```
 
+---
+
 ## 🆘 Troubleshooting
 
-### 🚨 Common Issues
-
-**❌ Module fails to load:**
+### ❌ **Module Won't Load**
 ```bash
-# Check if WMI GUID is available
+# Check WMI GUID availability
 ls /sys/bus/wmi/devices/ | grep 644C5791-B7B0-4123-A90B-E93876E0DAAD
 
-# Check kernel logs
+# Review kernel logs
 dmesg | grep -i casper
 ```
 
-**💡 LED control not working:**
+### 💡 **LED Control Issues**
 ```bash
-# Verify driver is loaded
+# Verify driver status
 lsmod | grep casper_wmi
 
-# Check permissions
+# Check file permissions
 ls -la /sys/class/leds/casper::kbd_backlight/led_control
 ```
 
-**💥 Control panel crashes:**
+### 💥 **Control Panel Crashes**
 ```bash
 # Run with error output
 python3 excalibur.py
 
-# Check dependencies
+# Verify power profiles daemon
 powerprofilesctl --help
 ```
 
-### 🆘 Getting Help
-
-If you encounter issues:
-
-1. ✅ Check the troubleshooting section above
-2. 🔍 Verify your laptop model is supported
-3. 📋 Review kernel logs with `dmesg`
-4. 🐛 Open an issue with system information:
-   - 💻 Laptop model (`sudo dmidecode -s system-product-name`)
-   - 🐧 Kernel version (`uname -r`)
-   - 📦 Distribution (`lsb_release -a`)
+---
 
 ## 🤝 Contributing
 
-Contributions are welcome! Areas where help is needed:
+We welcome contributions from the gaming and Linux communities! Here's how you can help:
 
+### 🎯 **Priority Areas**
 - **🎮 Device Support**: Adding support for new Casper Excalibur models
-- **✨ Feature Enhancement**: Additional lighting effects and controls
-- **🧪 Testing**: Validation on different hardware configurations
-- **📚 Documentation**: Improving guides and troubleshooting
+- **✨ Feature Enhancement**: Additional lighting effects and advanced controls
+- **🧪 Hardware Testing**: Validation on different configurations
+- **📚 Documentation**: Improving guides and user experience
+- **🌍 Localization**: Multi-language support for global users
 
-### 🛠️ Development Setup
+### 🔄 **Development Workflow**
 
 ```bash
-git clone https://github.com/yourusername/casper-excalibur-wmi
-cd casper-excalibur-wmi
+git clone https://github.com/sarikayra/excalibur.git
+cd excalibur
 
-# Create development branch
-git checkout -b feature/your-feature
+# Create feature branch
+git checkout -b feature/amazing-new-feature
 
 # Test your changes
-sudo ./install.sh --uninstall  # Remove existing installation
+sudo ./install.sh --uninstall  # Clean slate
 sudo ./install.sh              # Install your changes
+
+# Submit pull request
 ```
 
-## 📄 License
+---
 
-This project is open source and available under the [MIT License](LICENSE).
+## 📜 License & Attribution
 
-## 🙏 Acknowledgments
+This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
 
-Thanks to the amazing open-source community and the developers of:
+### 🙏 **Acknowledgments**
+- 🐧 **Linux Kernel WMI Subsystem** developers for the foundation
+- 🎮 **Casper Community** for hardware information and extensive testing
+- 👥 **Open Source Contributors** who helped identify supported models
+- 🌟 **Linux Gaming Community** for inspiration and feedback
 
-- 🐧 Linux kernel WMI subsystem developers
-- 🎮 Casper community for hardware information and testing
-- 👥 Contributors who helped identify supported models
-- 🌟 Everyone who made this project possible
+---
+
+## 🎮 About Casper Excalibur
+
+Casper Excalibur laptops are high-performance gaming machines popular in Turkey and emerging markets. These laptops feature:
+- **RGB Keyboard Backlighting** with multiple zones
+- **Advanced Thermal Management** with dual fan systems
+- **Gaming-Optimized Hardware** with discrete graphics
+- **Power Profile Controls** for performance tuning
 
 ---
 
 <div align="center">
 
-**🎮 Made with ❤️ for the Linux gaming community**
+**🎮 Made with ❤️ for the Linux Gaming Community**
 
-⭐ If you found this useful, consider giving it a star!
-
-[🐛 Report Bug](https://github.com/yourusername/casper-excalibur-wmi/issues) • [✨ Request Feature](https://github.com/yourusername/casper-excalibur-wmi/issues) • [🤝 Contribute](https://github.com/yourusername/casper-excalibur-wmi/pulls)
+*Bringing Windows gaming features to Linux, one driver at a time.*
 
 </div>

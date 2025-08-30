@@ -11,7 +11,7 @@
 #include <linux/dmi.h>
 #include <acpi/acexcep.h>
 
-MODULE_AUTHOR("Mustafa Ekşi <mustafa.eskieksi@gmail.com>");
+MODULE_AUTHOR("Kayra Sari <sarikayra@proton.me>");
 MODULE_DESCRIPTION("Casper Excalibur Laptop WMI driver");
 MODULE_LICENSE("GPL");
 

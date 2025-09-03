@@ -1,7 +1,6 @@
 # Excalibur - Casper Gaming Laptop Linux Driver
 
 **Comprehensive WMI driver and control panel for Casper Excalibur gaming laptops on Linux.**  
-Unlock full RGB control, hardware monitoring, and power management for your hardware.
 
 ---
 
@@ -12,7 +11,7 @@ Excalibur is a technical Linux kernel module and TUI application providing advan
 
 ## Key Features
 
-- **RGB Keyboard Mastery:**  
+- **RGB Keyboard:**  
   8 lighting modes, 9-zone control, custom colors, and preset effects.
 
 - **Hardware Monitoring:**  

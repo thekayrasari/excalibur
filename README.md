@@ -1,10 +1,4 @@
 # Excalibur - Casper Gaming Laptop Linux Driver
-
-**Comprehensive WMI driver and control panel for Casper Excalibur gaming laptops on Linux.**  
-
----
-
-## What is Excalibur?
 Excalibur is a technical Linux kernel module and TUI application providing advanced hardware control for Casper Excalibur laptops. It enables deep system integration, bridging ACPI/WMI firmware features to Linux.
 
 ---

@@ -20,10 +20,10 @@ Install prerequisites:
 - **Fedora**: `sudo dnf install make gcc kernel-devel dkms`
 
 ## Installation
-1. Extract the archive:
+1. Clone the repo:
    ```bash
-   tar -xzf excalibur-wmi.tar.gz
-   cd excalibur-wmi
+   git clone https://github.com/sarikayra/excalibur
+   cd excalibur
    ```
 
 2. Install the module:
@@ -58,15 +58,17 @@ sudo rm -rf /usr/src/excalibur-1.0
 ```
 
 ## Usage
-- **Keyboard Backlight**:
+
+
+- **Keyboard RGB**:
+  ```bash
+  echo "301000000" | sudo tee /sys/class/leds/excalibur::kbd_backlight/led_control  # Zone 3
+  ```
+
+- **Keyboard Brightness**:
   ```bash
   echo 1 | sudo tee /sys/class/leds/excalibur::kbd_backlight/brightness  # Level 1
   echo 2 | sudo tee /sys/class/leds/excalibur::kbd_backlight/brightness  # Level 2
-  ```
-
-- **LED Control** (advanced):
-  ```bash
-  echo "301000000" | sudo tee /sys/class/leds/excalibur::kbd_backlight/led_control  # Zone 3
   ```
 
 - **Fan Speeds**:
@@ -100,7 +102,7 @@ sudo rm -rf /usr/src/excalibur-1.0
 2. Share the tarball. Users can extract and run `sudo ./install.sh [install|dkms]`.
 
 ## Supported Models
-- Excalibur G650, G750, G670, G900 (BIOS CP131)
+- Excalibur G650, G750, G670, G900, G870, G770
 - Add new models to `excalibur.c` (DMI table) and recompile.
 
 ## Troubleshooting

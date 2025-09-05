@@ -1,75 +1,112 @@
-# Excalibur - Casper Gaming Laptop Linux Driver
-Excalibur is a technical Linux kernel module and TUI application providing advanced hardware control for Casper Excalibur laptops. It enables deep system integration, bridging ACPI/WMI firmware features to Linux.
+# Excalibur WMI Kernel Module
 
----
+This is a Linux kernel module for controlling hardware features on Excalibur laptops (e.g., keyboard backlight, fan speeds, power plans) via WMI.
 
-## Key Features
+## Features
+- Keyboard backlight control
+- Fan speed monitoring
+- Power plan adjustment
+- Hardware info querying
 
-- **RGB Keyboard:**  
-  8 lighting modes, 9-zone control, custom colors, and preset effects.
+## Prerequisites
+- Linux kernel with ACPI/WMI support (most modern kernels)
+- Build tools: `make`, `gcc`
+- Kernel headers for your running kernel (`uname -r`)
+- (Optional) DKMS for auto-rebuild on kernel updates
 
-- **Hardware Monitoring:**  
-  Real-time fan speeds, temperature tracking, and sensor framework integration.
+Install prerequisites:
+- **Ubuntu/Debian**: `sudo apt install build-essential linux-headers-$(uname -r) dkms`
+- **Arch Linux**: `sudo pacman -S base-devel linux-headers` (DKMS via AUR: `yay -S dkms`)
+- **Fedora**: `sudo dnf install make gcc kernel-devel dkms`
 
-- **Power Profile Management:**  
-  Seamless with `power-profiles-daemon`, switch between balanced, performance, and power-saver.
+## Installation
+1. Extract the archive:
+   ```bash
+   tar -xzf excalibur-wmi.tar.gz
+   cd excalibur-wmi
+   ```
 
-- **Gaming-First Design:**  
-  Minimal overhead kernel module, direct WMI, system integration for LED control.
+2. Install the module:
+   ```bash
+   sudo ./install.sh install
+   ```
+   This will:
+   - Build the module
+   - Install to `/lib/modules/$(uname -r)/extra/`
+   - Configure auto-loading on boot
+   - Update initramfs (if applicable)
 
----
+3. (Optional) Install with DKMS for auto-rebuild on kernel updates:
+   ```bash
+   sudo ./install.sh dkms
+   ```
 
-## Quick Start
+4. Verify installation:
+   ```bash
+   lsmod | grep excalibur
+   dmesg | grep excalibur
+   ```
 
-### Prerequisites
-Install required packages for your distro:
+## Uninstallation
 ```bash
-# Ubuntu/Debian
-sudo apt update && sudo apt install build-essential gcc linux-headers-$(uname -r) zstd python3
-
-# Fedora/RHEL
-sudo dnf install kernel-devel gcc make zstd python3
-
-# Arch Linux
-sudo pacman -S linux-headers gcc make zstd python3
+sudo ./install.sh uninstall
+```
+For DKMS:
+```bash
+sudo dkms remove -m excalibur -v 1.0
+sudo rm -rf /usr/src/excalibur-1.0
 ```
 
-### Installation
-```bash
-git clone https://github.com/sarikayra/excalibur.git
-cd excalibur
-sudo ./install.sh
-sudo reboot
-```
+## Usage
+- **Keyboard Backlight**:
+  ```bash
+  echo 1 | sudo tee /sys/class/leds/excalibur::kbd_backlight/brightness  # Level 1
+  echo 2 | sudo tee /sys/class/leds/excalibur::kbd_backlight/brightness  # Level 2
+  ```
 
-### Launch Control Panel
-```bash
-excalibur
-```
+- **LED Control** (advanced):
+  ```bash
+  echo "301000000" | sudo tee /sys/class/leds/excalibur::kbd_backlight/led_control  # Zone 3
+  ```
 
----
+- **Fan Speeds**:
+  ```bash
+  cat /sys/class/hwmon/hwmon*/fan1_input  # CPU fan
+  cat /sys/class/hwmon/hwmon*/fan2_input  # GPU fan
+  ```
 
-## Technical Architecture
+- **Power Plan**:
+  ```bash
+  cat /sys/class/hwmon/hwmon*/pwm1  # Read current plan
+  echo 2 | sudo tee /sys/class/hwmon/hwmon*/pwm1  # Set to Gaming mode
+  ```
 
-- **Kernel Module:**  
-  WMI interface, LED device, hwmon integration, ACPI power profiles.
-- **TUI Application:**  
-  Curses interface, real-time system feedback, cross-distro compatibility.
-- **WMI Communication:**  
-  GUID: `644C5791-B7B0-4123-A90B-E93876E0DAAD`, LED control, hardware info, power plans.
+## Debugging
+- Enable debug mode:
+  ```bash
+  sudo modprobe excalibur debug=1
+  ```
+- Check logs:
+  ```bash
+  dmesg | grep excalibur
+  ```
 
----
+## Redistribution
+1. Package the module:
+   ```bash
+   tar -czf excalibur-wmi.tar.gz excalibur.c Makefile install.sh README.md
+   ```
 
-## Development
+2. Share the tarball. Users can extract and run `sudo ./install.sh [install|dkms]`.
 
-```bash
-make clean && make           # Build kernel module
-sudo insmod casper-wmi.ko    # Test module
-sudo rmmod casper-wmi        # Remove module
-```
+## Supported Models
+- Excalibur G650, G750, G670, G900 (BIOS CP131)
+- Add new models to `excalibur.c` (DMI table) and recompile.
 
----
+## Troubleshooting
+- **Module not loading**: Check `dmesg | grep excalibur` for errors (e.g., missing WMI GUID).
+- **Backlight not working**: Verify hardware compatibility with `sudo cat /sys/bus/wmi/devices/644C5791-B7B0-4123-A90B-E93876E0DAAD/guid`.
+- **Syntax errors in script**: Ensure Unix line endings (`dos2unix install.sh` or edit in `vim`/`nano`).
 
-## License
-
-MIT License. See [LICENSE](LICENSE).
+## Maintainer
+Kayra Sari <sarikayra@proton.me>

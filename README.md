@@ -18,6 +18,7 @@ Install prerequisites:
 - **Ubuntu/Debian**: `sudo apt install build-essential linux-headers-$(uname -r) dkms`
 - **Arch Linux**: `sudo pacman -S base-devel linux-headers` (DKMS via AUR: `yay -S dkms`)
 - **Fedora**: `sudo dnf install make gcc kernel-devel dkms`
+- **Pisi Linux**: `sudo pisi it kernel-module-headers gcc make zstd python3`
 
 ## Installation
 1. Clone the repo:

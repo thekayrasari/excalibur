@@ -22,7 +22,7 @@ Install prerequisites:
 ## Installation
 1. Clone the repo:
    ```bash
-   git clone https://github.com/sarikayra/excalibur
+   git clone https://github.com/thekayrasari/excalibur
    cd excalibur
    ```
 
@@ -109,6 +109,3 @@ sudo rm -rf /usr/src/excalibur-1.0
 - **Module not loading**: Check `dmesg | grep excalibur` for errors (e.g., missing WMI GUID).
 - **Backlight not working**: Verify hardware compatibility with `sudo cat /sys/bus/wmi/devices/644C5791-B7B0-4123-A90B-E93876E0DAAD/guid`.
 - **Syntax errors in script**: Ensure Unix line endings (`dos2unix install.sh` or edit in `vim`/`nano`).
-
-## Maintainer
-Kayra Sari <sarikayra@proton.me>

@@ -10,7 +10,7 @@
 #include <linux/wmi.h>
 #include <acpi/acexcep.h>
 
-MODULE_AUTHOR("Kayra Sari <sarikayra@proton.me>");
+MODULE_AUTHOR("Kayra Sari <thekayrasari@gmail.com>");
 MODULE_DESCRIPTION("Excalibur Laptop WMI driver");
 MODULE_LICENSE("GPL");
 

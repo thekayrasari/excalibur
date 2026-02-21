@@ -201,6 +201,35 @@ echo 1 | sudo tee /sys/class/leds/excalibur::kbd_backlight/brightness
 echo 2 | sudo tee /sys/class/leds/excalibur::kbd_backlight/brightness
 ```
 
+#### Create a systemd service for startup so it doesn't get reset
+
+```bash
+# Create a systemd service
+sudo nano /etc/systemd/system/kblights.service
+
+# Paste this into it
+[Unit]
+Description=Keyboard Lights
+
+[Service]
+Type=oneshot
+User=root
+
+ExecStart=/usr/bin/fish -c "echo "10FF0000" | sudo tee /sys/class/leds/excalibur::kbd_backlight/led_control"
+
+ExecStart=/usr/bin/fish -c "echo 2 | sudo tee /sys/class/leds/excalibur::kbd_backlight/brightness"
+
+[Install]
+WantedBy=multi-user.target
+
+# Enable it
+sudo systemctl enable kblights.service
+
+# Reboot and try if it works.
+
+# 10FF0000 is plain red with no effects, you have to configure it to your liking.
+```
+
 ### 🌀 Fan Speed Monitoring
 
 ```bash
@@ -374,6 +403,28 @@ sudo dnf install make gcc kernel-devel                       # Fedora
 make clean
 make
 ```
+
+### 🔧 CachyOS Users
+
+**Problem:** Can't install on CachyOS
+
+**Common causes:**
+- CachyOS uses clang for kernel and the install script doesn't supports it
+
+**Solution:**
+```bash
+# Install the normal linux kernel from the kernel manager.
+
+# Boot with it from the Advanced Options for CachyOS at Grub.
+
+# Select normal linux kernel.
+
+# Install the driver.
+```
+
+**Notice**
+- Remember that you always have to boot with the normal linux kernel if you wan't to change the keyboard settings.
+- Keyboard lights are not gonna be reset if you don't boot with the normal linux kernel.
 
 <br>
 

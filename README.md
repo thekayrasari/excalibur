@@ -1,448 +1,140 @@
-<div align="center">
+# Excalibur WMI Linux Driver
 
-# ⚔️ Excalibur WMI Kernel Module
+## Overview
 
-### Linux Driver for Excalibur Gaming Laptops
+This project provides a Linux kernel module for Excalibur laptops, enabling control and monitoring of various hardware features through Windows Management Instrumentation (WMI). It exposes functionalities such as keyboard backlight control, corner LED management, CPU/GPU fan speed monitoring, and power plan selection.
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE.txt)
-[![Platform](https://img.shields.io/badge/Platform-Linux-orange.svg)]()
-[![Kernel](https://img.shields.io/badge/Kernel-5.0+-green.svg)]()
+## Features
 
-*Control your Excalibur laptop's hardware features directly from Linux*
+*   **Keyboard Backlight Control**: Adjust brightness and control different keyboard LED zones.
+*   **Corner LED Control**: Manage the behavior of corner LEDs.
+*   **Fan Speed Monitoring**: Read CPU and GPU fan speeds via `hwmon` interface.
+*   **Power Plan Management**: Select different power plans for optimized performance or power saving through `hwmon`.
 
-[Features](#-features) • [Installation](#-installation) • [Usage](#-usage) • [Troubleshooting](#-troubleshooting)
+## Supported Models
 
----
+The driver is designed for Excalibur laptops and has been specifically tested and identified for the following models:
 
-</div>
+*   EXCALIBUR G650
+*   EXCALIBUR G750
+*   EXCALIBUR G670
+*   EXCALIBUR G900 (with BIOS version CP131)
 
-## 📋 Overview
+## Prerequisites
 
-The **Excalibur WMI Kernel Module** is a Linux driver that provides comprehensive hardware control for Excalibur gaming laptops through the WMI (Windows Management Instrumentation) interface. Take full control of your laptop's RGB lighting, fan speeds, and power profiles directly from your Linux system.
+To build and install this module, you need the following:
 
-<br>
+*   Linux kernel headers for your running kernel (`uname -r`)
+*   Build tools: `make`, `gcc`
 
-## ✨ Features
+**Installation of Prerequisites (Examples):**
 
-<table>
-<tr>
-<td width="50%">
+*   **Ubuntu/Debian:**
+    ```bash
+    sudo apt update
+    sudo apt install build-essential linux-headers-$(uname -r)
+    ```
+*   **Arch Linux:**
+    ```bash
+    sudo pacman -S base-devel linux-headers
+    ```
+*   **Fedora:**
+    ```bash
+    sudo dnf install make gcc kernel-devel
+    ```
 
-### 💡 **RGB Keyboard Control**
-- Multi-zone RGB backlight configuration
-- Per-zone color customization
-- 3-level brightness control
-- Corner LED support
+## Installation
 
-</td>
-<td width="50%">
-
-### 🌀 **Fan Management**
-- Real-time CPU fan speed monitoring
-- Real-time GPU fan speed monitoring
-- Hardware sensor integration
-- Live system monitoring via hwmon
-
-</td>
-</tr>
-<tr>
-<td width="50%">
-
-### ⚡ **Power Profiles**
-- **High Power** - Maximum performance
-- **Gaming** - Balanced gaming mode
-- **Text Mode** - Quiet productivity
-- **Low Power** - Battery saving
-
-</td>
-<td width="50%">
-
-### 🔧 **Hardware Info**
-- BIOS version query
-- Hardware information retrieval
-- DMI system identification
-- ACPI/WMI integration
-
-</td>
-</tr>
-</table>
-
-<br>
-
-## 🖥️ Supported Models
-
-| Model | Status | Notes |
-|-------|--------|-------|
-| 🎮 Excalibur G650 | ✅ Fully Supported | Tested & Verified |
-| 🎮 Excalibur G750 | ✅ Fully Supported | Tested & Verified |
-| 🎮 Excalibur G670 | ✅ Fully Supported | Tested & Verified |
-| 🎮 Excalibur G900 | ✅ Fully Supported | BIOS CP131 |
-| 🎮 Excalibur G870 | ⚠️ Compatible | Add to DMI table |
-| 🎮 Excalibur G770 | ⚠️ Compatible | Add to DMI table |
-
-> 💡 **Tip:** Don't see your model? You can add it to the DMI table in `excalibur.c` and recompile!
-
-<br>
-
-## 📦 Prerequisites
-
-### Build Requirements
-
-Before installation, ensure you have the necessary build tools and kernel headers:
-
-<details>
-<summary><b>🐧 Ubuntu / Debian / Linux Mint</b></summary>
+To install the driver, use the provided `install.sh` script. This script will build the module, install it, configure it for auto-loading on boot, and update your initramfs.
 
 ```bash
-sudo apt install build-essential linux-headers-$(uname -r) dkms
-```
-</details>
-
-<details>
-<summary><b>🔵 Arch Linux / Manjaro</b></summary>
-
-```bash
-sudo pacman -S base-devel linux-headers
-# For DKMS (optional)
-yay -S dkms
-```
-</details>
-
-<details>
-<summary><b>🎩 Fedora / RHEL / CentOS</b></summary>
-
-```bash
-sudo dnf install make gcc kernel-devel dkms
-```
-</details>
-
-<details>
-<summary><b>🦎 openSUSE</b></summary>
-
-```bash
-sudo zypper install make gcc kernel-devel dkms
-```
-</details>
-
-### System Requirements
-
-- ✅ Linux kernel with ACPI/WMI support (5.0+)
-- ✅ GCC compiler
-- ✅ Make build system
-- ✅ Kernel headers matching your running kernel
-- ⚙️ DKMS (optional, for automatic rebuilds)
-
-<br>
-
-## 🚀 Installation
-
-### Method 1: Standard Installation
-
-```bash
-# 1. Clone the repository
-git clone https://github.com/thekayrasari/excalibur
-cd excalibur
-
-# 2. Run the installation script
 sudo ./install.sh install
-
-# 3. Verify the installation
-lsmod | grep excalibur
-dmesg | grep excalibur
 ```
 
-**What this does:**
-- 🔨 Builds the kernel module
-- 📁 Installs to `/lib/modules/$(uname -r)/extra/`
-- 🔄 Configures auto-loading on boot
-- 💾 Updates initramfs (distribution-specific)
+## Uninstallation
 
-### Method 2: DKMS Installation (Recommended)
-
-DKMS automatically rebuilds the module when you update your kernel.
-
-```bash
-sudo ./install.sh dkms
-```
-
-**Benefits:**
-- ✅ Automatic rebuilds on kernel updates
-- ✅ Simplified version management
-- ✅ Better upgrade path
-
-<br>
-
-## 🎮 Usage
-
-### 🌈 RGB Keyboard Control
-
-#### Set Zone Colors
-
-```bash
-# Zone 3 - Full RGB control (format: ZZRRGGBB in hex)
-echo "301000000" | sudo tee /sys/class/leds/excalibur::kbd_backlight/led_control
-
-# Examples:
-echo "30FF0000" | sudo tee /sys/class/leds/excalibur::kbd_backlight/led_control  # Red
-echo "300FF000" | sudo tee /sys/class/leds/excalibur::kbd_backlight/led_control  # Green
-echo "3000FF00" | sudo tee /sys/class/leds/excalibur::kbd_backlight/led_control  # Blue
-```
-
-#### Adjust Brightness
-
-```bash
-# Level 0 - Off
-echo 0 | sudo tee /sys/class/leds/excalibur::kbd_backlight/brightness
-
-# Level 1 - Low
-echo 1 | sudo tee /sys/class/leds/excalibur::kbd_backlight/brightness
-
-# Level 2 - High
-echo 2 | sudo tee /sys/class/leds/excalibur::kbd_backlight/brightness
-```
-
-### 🌀 Fan Speed Monitoring
-
-```bash
-# Check CPU fan speed (RPM)
-cat /sys/class/hwmon/hwmon*/fan1_input
-
-# Check GPU fan speed (RPM)
-cat /sys/class/hwmon/hwmon*/fan2_input
-
-# Monitor both fans in real-time
-watch -n 1 'cat /sys/class/hwmon/hwmon*/fan*_input'
-```
-
-### ⚡ Power Plan Management
-
-```bash
-# View current power plan
-cat /sys/class/hwmon/hwmon*/pwm1
-
-# Set power plans:
-echo 1 | sudo tee /sys/class/hwmon/hwmon*/pwm1  # High Power
-echo 2 | sudo tee /sys/class/hwmon/hwmon*/pwm1  # Gaming
-echo 3 | sudo tee /sys/class/hwmon/hwmon*/pwm1  # Text Mode
-echo 4 | sudo tee /sys/class/hwmon/hwmon*/pwm1  # Low Power
-```
-
-| Mode | Value | Use Case |
-|------|-------|----------|
-| ⚡ High Power | 1 | Maximum performance, high power consumption |
-| 🎮 Gaming | 2 | Balanced performance and cooling |
-| 📝 Text Mode | 3 | Quiet operation, productivity tasks |
-| 🔋 Low Power | 4 | Battery saving, minimal fan noise |
-
-<br>
-
-## 🔍 Debugging
-
-### Enable Debug Mode
-
-```bash
-# Load module with debug output
-sudo modprobe excalibur debug=1
-
-# View debug messages
-dmesg | grep excalibur
-```
-
-### Common Debug Commands
-
-```bash
-# Check if module is loaded
-lsmod | grep excalibur
-
-# View detailed kernel messages
-dmesg | tail -50
-
-# Check WMI GUID availability
-ls -la /sys/bus/wmi/devices/644C5791-B7B0-4123-A90B-E93876E0DAAD/
-```
-
-<br>
-
-## 🗑️ Uninstallation
-
-### Standard Uninstall
+To uninstall the driver, use the `install.sh` script with the `uninstall` argument. This will unload the module, remove its files, and revert auto-loading configurations.
 
 ```bash
 sudo ./install.sh uninstall
 ```
 
-### DKMS Uninstall
+## Usage
+
+After successful installation, the driver will expose various controls and sensors through the Linux `sysfs` interface. 
+
+### LED Control
+
+Keyboard and corner LEDs can be controlled via `sysfs` entries, typically found under `/sys/class/leds/`.
+
+*   **Keyboard Backlight**: The keyboard backlight is registered as a standard LED class device, usually named `excalibur::kbd_backlight`. You can control its brightness:
+    ```bash
+    echo 1 > /sys/class/leds/excalibur::kbd_backlight/brightness
+    # Brightness values typically range from 0 (off) to 2 (max)
+    ```
+*   **Advanced LED Control (Zones, Colors):** For more advanced control over keyboard LED zones and specific colors, a `led_control` attribute is provided. This attribute expects a 64-bit hexadecimal value where the higher 32 bits represent the LED zone and the lower 32 bits represent the LED data (color/mode). 
+    *   **LED Zones:**
+        *   `0x03`: Keyboard LED Zone 1
+        *   `0x04`: Keyboard LED Zone 2
+        *   `0x05`: Keyboard LED Zone 3
+        *   `0x06`: All Keyboard LEDs
+        *   `0x07`: Corner LEDs
+    
+    *   **Example: Set all keyboard LEDs to a specific color (e.g., bright red):**
+        ```bash
+        echo "00000006FF000000" | sudo tee /sys/devices/platform/excalibur-wmi/led_control
+        # Format: [ZONE_ID][COLOR_DATA]
+        # ZONE_ID: 00000006 for all keyboard LEDs
+        # COLOR_DATA: FF000000 for bright red (ARGB format, A=alpha/brightness)
+        ```
+        *Note: The exact interpretation of `COLOR_DATA` (e.g., ARGB, RGB, specific modes) might require further experimentation or documentation from Excalibur.* 
+
+### Fan Speed Monitoring
+
+CPU and GPU fan speeds are exposed via the `hwmon` interface, typically found under `/sys/class/hwmon/hwmonX/` (where `X` is a number).
+
+*   **Identify your hwmon device:**
+    ```bash
+    ls /sys/class/hwmon/hwmon*/name
+    # Look for a file containing "excalibur_wmi"
+    ```
+*   Once identified (e.g., `hwmon0`):
+    ```bash
+    cat /sys/class/hwmon/hwmon0/fan1_input  # CPU Fan Speed (RPM)
+    cat /sys/class/hwmon/hwmon0/fan1_label # "cpu_fan_speed"
+    cat /sys/class/hwmon/hwmon0/fan2_input  # GPU Fan Speed (RPM)
+    cat /sys/class/hwmon/hwmon0/fan2_label # "gpu_fan_speed"
+    ```
+
+### Power Plan Control
+
+Power plans can be set via the `hwmon` interface, typically found under `/sys/class/hwmon/hwmonX/`.
+
+*   The power plan control is exposed as `pwm1`.
+    ```bash
+    # Read current power plan
+    cat /sys/class/hwmon/hwmon0/pwm1
+    
+    # Set power plan
+    # Values:
+    # 1: HIGH_POWER
+    # 2: GAMING
+    # 3: TEXT_MODE
+    # 4: LOW_POWER
+    echo 2 | sudo tee /sys/class/hwmon/hwmon0/pwm1 # Set to GAMING power plan
+    ```
+
+## Building Manually
+
+If you prefer to build the module manually without using `install.sh`:
 
 ```bash
-# Remove DKMS module
-sudo dkms remove -m excalibur -v 1.0
-
-# Clean up source files
-sudo rm -rf /usr/src/excalibur-1.0
-```
-
-<br>
-
-## 📦 Distribution
-
-### Create Distribution Package
-
-```bash
-tar -czf excalibur-wmi.tar.gz excalibur.c Makefile install.sh README.md LICENSE.txt
-```
-
-### Installation from Package
-
-```bash
-# Extract the archive
-tar -xzf excalibur-wmi.tar.gz
-cd excalibur-wmi
-
-# Install
-sudo ./install.sh install
-```
-
-<br>
-
-## 🛠️ Troubleshooting
-
-### ❌ Module Not Loading
-
-**Problem:** Module fails to load after installation
-
-```bash
-# Check kernel messages for errors
-dmesg | grep excalibur
-
-# Common issues:
-# - Missing WMI GUID
-# - Incompatible kernel version
-# - Missing dependencies
-```
-
-**Solution:**
-- Verify WMI GUID exists: `sudo cat /sys/bus/wmi/devices/644C5791-B7B0-4123-A90B-E93876E0DAAD/guid`
-- Check kernel version: `uname -r` (requires 5.0+)
-- Reinstall kernel headers
-
-### 💡 Backlight Not Working
-
-**Problem:** Keyboard backlight controls have no effect
-
-```bash
-# Test WMI device availability
-sudo cat /sys/bus/wmi/devices/644C5791-B7B0-4123-A90B-E93876E0DAAD/guid
-```
-
-**Solution:**
-- Verify your laptop model is supported
-- Check if BIOS has WMI disabled
-- Try loading with debug mode
-
-### 📝 Script Syntax Errors
-
-**Problem:** Installation script fails with syntax errors
-
-```bash
-# Convert line endings to Unix format
-dos2unix install.sh
-
-# Or use sed
-sed -i 's/\r$//' install.sh
-
-# Make executable
-chmod +x install.sh
-```
-
-### 🔧 Build Failures
-
-**Problem:** Compilation errors during build
-
-**Common causes:**
-- Missing kernel headers
-- Incompatible kernel version
-- Missing build tools
-
-**Solution:**
-```bash
-# Reinstall build dependencies
-sudo apt install build-essential linux-headers-$(uname -r)  # Ubuntu/Debian
-sudo pacman -S base-devel linux-headers                      # Arch
-sudo dnf install make gcc kernel-devel                       # Fedora
-
-# Clean and rebuild
-make clean
 make
 ```
+This will produce `excalibur.ko` in the current directory.
 
-<br>
+## License
 
-## 🤝 Contributing
+This project is licensed under the MIT License - see the `LICENSE` file for details.
 
-Contributions are welcome! Here's how you can help:
-
-- 🐛 Report bugs and issues
-- ✨ Suggest new features
-- 📝 Improve documentation
-- 🔧 Submit pull requests
-- 🎮 Test on different laptop models
-
-### Adding New Models
-
-To add support for your Excalibur model:
-
-1. Edit `excalibur.c`
-2. Add your model to the DMI table:
-```c
-{
-    .callback = dmi_matched,
-    .ident = "EXCALIBUR GXXX",
-    .matches = {
-        DMI_MATCH(DMI_SYS_VENDOR, "EXCALIBUR BILGISAYAR SISTEMLERI"),
-        DMI_MATCH(DMI_PRODUCT_NAME, "EXCALIBUR GXXX")
-    },
-    .driver_data = (void *)false,
-},
-```
-3. Recompile and test
-4. Submit a pull request!
-
-<br>
-
-## 📄 License
-
-This project is licensed under the **MIT License** - see the [LICENSE.txt](LICENSE.txt) file for details.
-
-```
 Copyright (c) 2025 Kayra Sarı
-```
-
-<br>
-
-## 👤 Author
-
-**Kayra Sarı**
-- 📧 Email: thekayrasari@gmail.com
-- 🐙 GitHub: [@thekayrasari](https://github.com/thekayrasari)
-
-<br>
-
-## 🙏 Acknowledgments
-
-- Linux kernel WMI subsystem developers
-- Excalibur laptop hardware documentation
-- Open source community contributors
-
-<br>
-
----
-
-<div align="center">
-
-### ⭐ Star this repository if you found it helpful!
-
-**Made with ❤️ for the Linux community**
-
-[Report Bug](https://github.com/thekayrasari/excalibur/issues) • [Request Feature](https://github.com/thekayrasari/excalibur/issues) • [Documentation](https://github.com/thekayrasari/excalibur/wiki)
-
-</div>

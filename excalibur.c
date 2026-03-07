@@ -229,6 +229,16 @@ static const struct dmi_system_id excalibur_dmi_list[] = {
 		},
 		.driver_data = (void *)true,
 	},
+	{
+		.callback    = dmi_matched,
+		.ident       = "EXCALIBUR G770",
+		.matches     = {
+			DMI_MATCH(DMI_SYS_VENDOR,   "CASPER BILGISAYAR SISTEMLERI"),
+			DMI_MATCH(DMI_PRODUCT_NAME, "EXCALIBUR G770"),
+			DMI_MATCH(DMI_BIOS_VERSION, "CP221"),
+		},
+		.driver_data = (void *)true,
+	},
 	{ }
 };
 

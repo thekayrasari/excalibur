@@ -186,7 +186,7 @@ static const struct dmi_system_id excalibur_dmi_list[] = {
 		.callback    = dmi_matched,
 		.ident       = "EXCALIBUR G650",
 		.matches     = {
-			DMI_MATCH(DMI_SYS_VENDOR,   "EXCALIBUR BILGISAYAR SISTEMLERI"),
+			DMI_MATCH(DMI_SYS_VENDOR,   "CASPER BILGISAYAR SISTEMLERI"),
 			DMI_MATCH(DMI_PRODUCT_NAME, "EXCALIBUR G650"),
 		},
 		.driver_data = (void *)false,
@@ -195,7 +195,7 @@ static const struct dmi_system_id excalibur_dmi_list[] = {
 		.callback    = dmi_matched,
 		.ident       = "EXCALIBUR G750",
 		.matches     = {
-			DMI_MATCH(DMI_SYS_VENDOR,   "EXCALIBUR BILGISAYAR SISTEMLERI"),
+			DMI_MATCH(DMI_SYS_VENDOR,   "CASPER BILGISAYAR SISTEMLERI"),
 			DMI_MATCH(DMI_PRODUCT_NAME, "EXCALIBUR G750"),
 		},
 		.driver_data = (void *)false,
@@ -204,7 +204,7 @@ static const struct dmi_system_id excalibur_dmi_list[] = {
 		.callback    = dmi_matched,
 		.ident       = "EXCALIBUR G670",
 		.matches     = {
-			DMI_MATCH(DMI_SYS_VENDOR,   "EXCALIBUR BILGISAYAR SISTEMLERI"),
+			DMI_MATCH(DMI_SYS_VENDOR,   "CASPER BILGISAYAR SISTEMLERI"),
 			DMI_MATCH(DMI_PRODUCT_NAME, "EXCALIBUR G670"),
 		},
 		.driver_data = (void *)false,
@@ -213,7 +213,7 @@ static const struct dmi_system_id excalibur_dmi_list[] = {
 		.callback    = dmi_matched,
 		.ident       = "EXCALIBUR G900",
 		.matches     = {
-			DMI_MATCH(DMI_SYS_VENDOR,   "EXCALIBUR BILGISAYAR SISTEMLERI"),
+			DMI_MATCH(DMI_SYS_VENDOR,   "CASPER BILGISAYAR SISTEMLERI"),
 			DMI_MATCH(DMI_PRODUCT_NAME, "EXCALIBUR G900"),
 			DMI_MATCH(DMI_BIOS_VERSION, "CP131"),
 		},
@@ -223,9 +223,19 @@ static const struct dmi_system_id excalibur_dmi_list[] = {
 		.callback    = dmi_matched,
 		.ident       = "EXCALIBUR G870",
 		.matches     = {
-			DMI_MATCH(DMI_SYS_VENDOR,   "EXCALIBUR BILGISAYAR SISTEMLERI"),
+			DMI_MATCH(DMI_SYS_VENDOR,   "CASPER BILGISAYAR SISTEMLERI"),
 			DMI_MATCH(DMI_PRODUCT_NAME, "EXCALIBUR G870"),
 			DMI_MATCH(DMI_BIOS_VERSION, "CQ141"),
+		},
+		.driver_data = (void *)true,
+	},
+	{
+		.callback    = dmi_matched,
+		.ident       = "EXCALIBUR G770",
+		.matches     = {
+			DMI_MATCH(DMI_SYS_VENDOR,   "CASPER BILGISAYAR SISTEMLERI"),
+			DMI_MATCH(DMI_PRODUCT_NAME, "EXCALIBUR G770"),
+			DMI_MATCH(DMI_BIOS_VERSION, "CP221"),
 		},
 		.driver_data = (void *)true,
 	},

@@ -631,7 +631,7 @@ static const struct hwmon_channel_info *const excalibur_hwmon_info[] = {
 	HWMON_CHANNEL_INFO(fan,
 			   HWMON_F_INPUT | HWMON_F_LABEL,
 			   HWMON_F_INPUT | HWMON_F_LABEL),
-	HWMON_CHANNEL_INFO(pwm, HWMON_PWM_MODE),
+	HWMON_CHANNEL_INFO(pwm, HWMON_PWM_INPUT),
 	NULL
 };
 
@@ -664,13 +664,13 @@ static int excalibur_wmi_probe(struct wmi_device *wdev, const void *context)
 	if (ret)
 		return ret;
 
-	dmi_check_system(excalibur_dmi_list);
+	bool model_known = dmi_check_system(excalibur_dmi_list);
 	drv->has_raw_fanspeed = excalibur_has_raw_fanspeed;
 
-	if (drv->has_raw_fanspeed)
-		dev_warn(&wdev->dev,
-			 "Unrecognised model — if you have an Intel CPU older "
-			 "than 10th gen, contact the driver maintainer.\n");
+	if (!model_known)
+    dev_warn(&wdev->dev,
+             "Unrecognised model — defaulting has_raw_fanspeed=true. "
+             "If fan speeds look wrong, see README: Adding New Models.\n");
 
 	for (i = 0; i < EXCALIBUR_ZONE_COUNT; i++) {
 		struct excalibur_zone *zone = &drv->zones[i];

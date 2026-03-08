@@ -32,7 +32,7 @@ Provides per-zone RGB keyboard control, fan speed monitoring, and power plan man
 | EXCALIBUR G670 | any | `false` | Supported |
 | EXCALIBUR G750 | any | `false` | Supported |
 | EXCALIBUR G900 | CP131 | `false` | Supported |
-| EXCALIBUR G870 | CQ141 | `true` | Supported — rainbow mode confirmed |
+| EXCALIBUR G870 | CQ141 | `true` | Supported |
 | EXCALIBUR G770 | CP221 | `true` | Supported |
 
 If your model is not listed, the driver will still load and function but will emit a warning in `dmesg`. See [Adding New Models](#adding-new-models).

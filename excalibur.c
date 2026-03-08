@@ -38,9 +38,9 @@ MODULE_LICENSE("GPL");
  *   Bits [ 7: 0]  blue      — 0–255
  *
  * Zone IDs (zone_id arg to excalibur_set):
- *   0x03  left keyboard zone
+ *   0x05  left keyboard zone  (firmware labels reversed vs. physical layout)
  *   0x04  middle keyboard zone
- *   0x05  right keyboard zone
+ *   0x03  right keyboard zone (firmware labels reversed vs. physical layout)
  *   0x06  all keyboard zones simultaneously (firmware broadcast)
  *   0x07  corner LEDs (independent brightness from keyboard zones)
  *
@@ -69,9 +69,9 @@ MODULE_LICENSE("GPL");
 #define EXCALIBUR_LED_BLUE		GENMASK(7, 0)
 
 /* Zone identifiers */
-#define EXCALIBUR_ZONE_LEFT		0x03
+#define EXCALIBUR_ZONE_LEFT		0x05
 #define EXCALIBUR_ZONE_MIDDLE		0x04
-#define EXCALIBUR_ZONE_RIGHT		0x05
+#define EXCALIBUR_ZONE_RIGHT		0x03
 #define EXCALIBUR_ZONE_ALL_KBD		0x06
 #define EXCALIBUR_ZONE_CORNERS		0x07
 

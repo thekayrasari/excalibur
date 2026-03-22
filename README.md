@@ -1,4 +1,4 @@
-# excalibur-wmi
+# excalibur wmi driver
 
 Linux kernel WMI driver for Excalibur gaming laptops.  
 Provides per-zone RGB keyboard control, fan speed monitoring, and power plan management via the ACPI/WMI interface.

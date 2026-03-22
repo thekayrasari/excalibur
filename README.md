@@ -58,6 +58,16 @@ sudo pacman -S base-devel linux-headers
 sudo dnf install make gcc kernel-devel
 ```
 
+**Clang-built kernels (CachyOS, some Arch configs):**
+
+The installer detects the compiler used to build the running kernel from `/proc/version` and sets the correct flags automatically. If you are building manually on a clang-built kernel, use:
+
+```bash
+make CC=clang LLVM=1 LLVM_IAS=1
+```
+
+You will also need the `clang` and `llvm` packages in addition to `make`. Using `gcc` on a clang-built kernel risks ABI issues and is not supported.
+
 **Verify WMI GUID is exposed by firmware:**
 
 ```bash
@@ -69,6 +79,31 @@ If nothing is returned, the firmware does not expose the WMI interface and the d
 ---
 
 ## Installation
+
+### Arch-based distros (CachyOS, Manjaro, EndeavourOS)
+
+The headers package name must match your kernel variant. Find yours with `uname -r` and install the corresponding package before running the installer:
+
+| `uname -r` contains | Headers package |
+|---|---|
+| `cachyos` | `linux-cachyos-headers` |
+| `cachyos-lts` | `linux-cachyos-lts-headers` |
+| `cachyos-bore` | `linux-cachyos-bore-headers` |
+| `cachyos-hardened` | `linux-cachyos-hardened-headers` |
+| `manjaro` | `linux-headers` (via Manjaro Settings Manager) |
+
+```bash
+# Example for the default CachyOS kernel
+sudo pacman -S linux-cachyos-headers
+```
+
+Then proceed with the standard install:
+
+```bash
+sudo ./install.sh install
+```
+
+The installer detects that CachyOS kernels are built with clang and passes `CC=clang LLVM=1 LLVM_IAS=1` to `make` automatically.
 
 ### Temporary (current session only, safe for testing)
 

@@ -43,6 +43,8 @@ INITRAMFS_CMD=""
 PYTHON_BIN="python3"
 PKG_INSTALL=""
 HEADERS_PKG=""
+COMPILER=""       # "gcc" or "clang" — detected at runtime from /proc/version
+MAKE_FLAGS=""     # extra flags forwarded to every make invocation
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 print_banner() {
@@ -99,7 +101,7 @@ detect_distro() {
         DISTRO_NAME="${PRETTY_NAME:-unknown}"
     fi
     case "$DISTRO_ID" in
-        arch|manjaro|endeavouros)
+        arch|manjaro|endeavouros|cachyos)
             INITRAMFS_CMD="mkinitcpio -P"
             PKG_INSTALL="pacman -S --noconfirm"
             HEADERS_PKG="linux-headers"
@@ -126,17 +128,47 @@ detect_distro() {
     esac
 }
 
+# ── Compiler detection ────────────────────────────────────────────────────────
+# Read /proc/version to match the compiler that built the running kernel.
+# Building with a different compiler than the host kernel risks ABI issues;
+# this is the root cause of install failures on CachyOS (clang-built by default).
+detect_compiler() {
+    if grep -q "clang" /proc/version 2>/dev/null; then
+        COMPILER="clang"
+        MAKE_FLAGS="CC=clang LLVM=1 LLVM_IAS=1"
+        ok "Kernel was built with clang — using clang for module build"
+    else
+        COMPILER="gcc"
+        MAKE_FLAGS=""
+        ok "Kernel was built with gcc — using gcc for module build"
+    fi
+}
+
 # ── Pre-flight checks ─────────────────────────────────────────────────────────
 check_build_tools() {
     local missing=()
-    command -v make &>/dev/null || missing+=("make")
-    command -v gcc  &>/dev/null || missing+=("gcc")
-    if [[ ${#missing[@]} -gt 0 ]]; then
-        err "Missing build tools: ${missing[*]}"
-        [[ -n "$PKG_INSTALL" ]] && info "Install with: ${PKG_INSTALL} ${missing[*]}"
-        return 1
+
+    if [[ "$COMPILER" == "clang" ]]; then
+        command -v clang  &>/dev/null || missing+=("clang")
+        command -v make   &>/dev/null || missing+=("make")
+        # LLVM=1 requires llvm-ar, llvm-nm, etc. — all ship in the llvm package
+        command -v llvm-ar &>/dev/null || missing+=("llvm")
+        if [[ ${#missing[@]} -gt 0 ]]; then
+            err "Missing build tools for clang build: ${missing[*]}"
+            [[ -n "$PKG_INSTALL" ]] && info "Install with: ${PKG_INSTALL} clang llvm make"
+            return 1
+        fi
+        ok "Build tools present (clang, llvm, make)"
+    else
+        command -v make &>/dev/null || missing+=("make")
+        command -v gcc  &>/dev/null || missing+=("gcc")
+        if [[ ${#missing[@]} -gt 0 ]]; then
+            err "Missing build tools: ${missing[*]}"
+            [[ -n "$PKG_INSTALL" ]] && info "Install with: ${PKG_INSTALL} ${missing[*]}"
+            return 1
+        fi
+        ok "Build tools present (make, gcc)"
     fi
-    ok "Build tools present (make, gcc)"
 }
 
 check_kernel_headers() {
@@ -145,7 +177,24 @@ check_kernel_headers() {
         return 0
     fi
     err "Kernel headers not found at ${LIB_MODULES}/build"
-    [[ -n "$HEADERS_PKG" && -n "$PKG_INSTALL" ]] && info "Install with: ${PKG_INSTALL} ${HEADERS_PKG}"
+    # On Arch-family with multiple kernel flavours (CachyOS especially), the
+    # headers package name matches the kernel package name with -headers appended.
+    # e.g. linux-cachyos → linux-cachyos-headers, linux-cachyos-lts → linux-cachyos-lts-headers
+    if [[ "$DISTRO_ID" =~ ^(arch|manjaro|endeavouros|cachyos)$ ]]; then
+        local kernel_pkg
+        kernel_pkg=$(pacman -Qo "${LIB_MODULES}" 2>/dev/null | awk '{print $NF}' || true)
+        if [[ -n "$kernel_pkg" ]]; then
+            info "Install with: pacman -S ${kernel_pkg}-headers"
+        else
+            info "Install the headers package for your kernel variant, e.g.:"
+            info "  pacman -S linux-cachyos-headers"
+            info "  pacman -S linux-cachyos-lts-headers"
+            info "  pacman -S linux-cachyos-bore-headers"
+            info "Run 'uname -r' and match the suffix to find yours."
+        fi
+    elif [[ -n "$HEADERS_PKG" && -n "$PKG_INSTALL" ]]; then
+        info "Install with: ${PKG_INSTALL} ${HEADERS_PKG}"
+    fi
     return 1
 }
 
@@ -198,14 +247,16 @@ install_textual() {
 
 # ── Driver ────────────────────────────────────────────────────────────────────
 build_driver() {
-    step "Building kernel module"
+    step "Building kernel module (compiler: ${COMPILER})"
     if [[ ! -f "excalibur.c" || ! -f "Makefile" ]]; then
         err "excalibur.c or Makefile not found in $(pwd)"
         info "Run this script from the excalibur source directory."
         exit 1
     fi
-    make clean 2>/dev/null || true
-    if make; then
+    # shellcheck disable=SC2086
+    make clean $MAKE_FLAGS 2>/dev/null || true
+    # shellcheck disable=SC2086
+    if make $MAKE_FLAGS; then
         ok "Module built: ${KO_FILE}"
     else
         err "Build failed"
@@ -376,7 +427,7 @@ interactive_install() {
     echo -e "  ${W}Welcome to the Excalibur WMI installer.${NC}"
     echo -e "  ${D}This wizard installs the kernel driver and TUI control panel.${NC}"
     echo ""
-    echo -e "  ${D}System : ${W}${DISTRO_NAME:-Unknown}${NC}  |  Kernel: ${W}$(uname -r)${NC}"
+    echo -e "  ${D}System : ${W}${DISTRO_NAME:-Unknown}${NC}  |  Kernel: ${W}$(uname -r)${NC}  |  Compiler: ${W}${COMPILER}${NC}"
     echo ""
 
     step "Pre-flight checks"
@@ -431,6 +482,7 @@ interactive_install() {
     echo ""
     echo -e "  ${M}── Summary ────────────────────────────────────────────────────${NC}"
     divider
+    info "  Compiler: ${COMPILER}  (${MAKE_FLAGS:-no extra flags})"
     [[ "$INSTALL_DRIVER"  == true ]] && info "  ✦ Kernel driver" || info "  ○ Kernel driver (skip)"
     [[ "$INSTALL_TEXTUAL" == true ]] && info "  ✦ Textual library" || info "  ○ Textual (skip)"
     [[ "$INSTALL_PANEL"   == true ]] && info "  ✦ Control panel  →  ${CONTROL_PANEL_BIN}" || info "  ○ Control panel (skip)"
@@ -481,6 +533,7 @@ interactive_uninstall() {
 # ── Entry point ───────────────────────────────────────────────────────────────
 require_root
 detect_distro
+detect_compiler   # must run after detect_distro (needs DISTRO_ID for header hints)
 
 case "${1:-}" in
     install)

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 #include <linux/acpi.h>
 #include <linux/bitfield.h>
+#include <linux/byteorder/generic.h>
 #include <linux/dmi.h>
 #include <linux/device.h>
 #include <linux/hwmon.h>
@@ -169,14 +170,37 @@ static const char * const excalibur_zone_names[EXCALIBUR_ZONE_COUNT] = {
 };
 
 /* ================================================================
+ * Per-model quirks
+ *
+ * Passed via wmi_device_id.context (and mirrored in the DMI table's
+ * driver_data) so each field is determined at probe() time from the
+ * matched entry — no mutable file-scope globals, no TOCTOU window,
+ * and safe for .no_singleton.
+ *
+ * has_raw_fanspeed: true  → firmware reports RPM as-is (newer gen)
+ *                   false → firmware reports RPM big-endian (older gen,
+ *                           10th-gen Intel CPUs); probe swaps with swab16()
+ * ================================================================ */
+
+struct excalibur_quirk {
+	bool has_raw_fanspeed;
+};
+
+/* Quirk instances — referenced by both DMI and WMI id tables */
+static const struct excalibur_quirk excalibur_quirk_old_gen = {
+	.has_raw_fanspeed = false,
+};
+
+static const struct excalibur_quirk excalibur_quirk_new_gen = {
+	.has_raw_fanspeed = true,
+};
+
+/* ================================================================
  * DMI matching
  * ================================================================ */
 
-static bool excalibur_has_raw_fanspeed = true;
-
 static int dmi_matched(const struct dmi_system_id *dmi)
 {
-	excalibur_has_raw_fanspeed = (bool)(uintptr_t)dmi->driver_data;
 	pr_info("excalibur-wmi: identified model '%s'\n", dmi->ident);
 	return 1;
 }
@@ -189,7 +213,7 @@ static const struct dmi_system_id excalibur_dmi_list[] = {
 			DMI_MATCH(DMI_SYS_VENDOR,   "CASPER BILGISAYAR SISTEMLERI"),
 			DMI_MATCH(DMI_PRODUCT_NAME, "EXCALIBUR G650"),
 		},
-		.driver_data = (void *)false,
+		.driver_data = (void *)&excalibur_quirk_old_gen,
 	},
 	{
 		.callback    = dmi_matched,
@@ -198,7 +222,7 @@ static const struct dmi_system_id excalibur_dmi_list[] = {
 			DMI_MATCH(DMI_SYS_VENDOR,   "CASPER BILGISAYAR SISTEMLERI"),
 			DMI_MATCH(DMI_PRODUCT_NAME, "EXCALIBUR G750"),
 		},
-		.driver_data = (void *)false,
+		.driver_data = (void *)&excalibur_quirk_old_gen,
 	},
 	{
 		.callback    = dmi_matched,
@@ -207,7 +231,7 @@ static const struct dmi_system_id excalibur_dmi_list[] = {
 			DMI_MATCH(DMI_SYS_VENDOR,   "CASPER BILGISAYAR SISTEMLERI"),
 			DMI_MATCH(DMI_PRODUCT_NAME, "EXCALIBUR G670"),
 		},
-		.driver_data = (void *)false,
+		.driver_data = (void *)&excalibur_quirk_old_gen,
 	},
 	{
 		.callback    = dmi_matched,
@@ -217,7 +241,7 @@ static const struct dmi_system_id excalibur_dmi_list[] = {
 			DMI_MATCH(DMI_PRODUCT_NAME, "EXCALIBUR G900"),
 			DMI_MATCH(DMI_BIOS_VERSION, "CP131"),
 		},
-		.driver_data = (void *)false,
+		.driver_data = (void *)&excalibur_quirk_old_gen,
 	},
 	{
 		.callback    = dmi_matched,
@@ -227,7 +251,7 @@ static const struct dmi_system_id excalibur_dmi_list[] = {
 			DMI_MATCH(DMI_PRODUCT_NAME, "EXCALIBUR G870"),
 			DMI_MATCH(DMI_BIOS_VERSION, "CQ141"),
 		},
-		.driver_data = (void *)true,
+		.driver_data = (void *)&excalibur_quirk_new_gen,
 	},
 	{
 		.callback    = dmi_matched,
@@ -237,7 +261,7 @@ static const struct dmi_system_id excalibur_dmi_list[] = {
 			DMI_MATCH(DMI_PRODUCT_NAME, "EXCALIBUR G770"),
 			DMI_MATCH(DMI_BIOS_VERSION, "CP221"),
 		},
-		.driver_data = (void *)true,
+		.driver_data = (void *)&excalibur_quirk_new_gen,
 	},
 	{ }
 };
@@ -280,7 +304,8 @@ static int excalibur_query(struct excalibur_wmi_data *drv, u16 cmd,
 		return -EIO;
 
 	if (obj->type != ACPI_TYPE_BUFFER ||
-	    obj->buffer.length != sizeof(*out)) {
+	    obj->buffer.length < sizeof(*out) ||	/* catches short/empty buffers */
+	    !obj->buffer.pointer) {			/* explicit NULL guard */
 		kfree(obj);
 		return -EIO;
 	}
@@ -519,7 +544,7 @@ static ssize_t raw_store(struct device *dev, struct device_attribute *attr,
 	ret = excalibur_set(drv, EXCALIBUR_SET_LED, zone->zone_id, data);
 	mutex_unlock(&drv->lock);
 
-	dev_info(dev, "raw: zone=0x%02x data=0x%08x ret=%d\n",
+	dev_dbg(dev, "raw: zone=0x%02x data=0x%08x ret=%d\n",
 		 zone->zone_id, data, ret);
 
 	return ret ? ret : count;
@@ -545,8 +570,12 @@ static u16 excalibur_decode_fanspeed(struct excalibur_wmi_data *drv, u32 raw)
 {
 	u16 val = (u16)raw;
 
+	/*
+	 * Older firmware (10th-gen Intel): RPM is reported as a big-endian
+	 * u16 at bits [15:0].  Newer firmware reports it little-endian.
+	 */
 	if (!drv->has_raw_fanspeed)
-		val = (val << 8) | (raw >> 8);
+		val = swab16(val);	/* explicit big→little endian swap */
 	return val;
 }
 
@@ -646,12 +675,11 @@ static const struct hwmon_chip_info excalibur_hwmon_chip_info = {
 
 static int excalibur_wmi_probe(struct wmi_device *wdev, const void *context)
 {
+	const struct excalibur_quirk *quirk = context;
 	struct excalibur_wmi_data *drv;
 	struct device *hwmon_dev;
+	bool model_known;
 	int i, ret;
-
-	if (!wmi_has_guid(EXCALIBUR_WMI_GUID))
-		return -ENODEV;
 
 	drv = devm_kzalloc(&wdev->dev, sizeof(*drv), GFP_KERNEL);
 	if (!drv)
@@ -664,13 +692,32 @@ static int excalibur_wmi_probe(struct wmi_device *wdev, const void *context)
 	if (ret)
 		return ret;
 
-	bool model_known = dmi_check_system(excalibur_dmi_list);
-	drv->has_raw_fanspeed = excalibur_has_raw_fanspeed;
+	/*
+	 * Resolve has_raw_fanspeed from the quirk pointer carried in context.
+	 * context is set by the WMI id_table entry; fall back to DMI if it
+	 * is NULL (e.g. the driver was loaded manually against an unknown model).
+	 */
+	if (quirk) {
+		drv->has_raw_fanspeed = quirk->has_raw_fanspeed;
+		model_known = true;
+	} else {
+		const struct dmi_system_id *dmi_id;
+
+		dmi_id = dmi_first_match(excalibur_dmi_list);
+		if (dmi_id) {
+			quirk = dmi_id->driver_data;
+			drv->has_raw_fanspeed = quirk->has_raw_fanspeed;
+			model_known = true;
+		} else {
+			drv->has_raw_fanspeed = true; /* safe default */
+			model_known = false;
+		}
+	}
 
 	if (!model_known)
-    dev_warn(&wdev->dev,
-             "Unrecognised model — defaulting has_raw_fanspeed=true. "
-             "If fan speeds look wrong, see README: Adding New Models.\n");
+		dev_warn(&wdev->dev,
+			 "Unrecognised model — defaulting has_raw_fanspeed=true. "
+			 "If fan speeds look wrong, see README: Adding New Models.\n");
 
 	for (i = 0; i < EXCALIBUR_ZONE_COUNT; i++) {
 		struct excalibur_zone *zone = &drv->zones[i];
@@ -712,9 +759,10 @@ static const struct wmi_device_id excalibur_wmi_id_table[] = {
 };
 
 static struct wmi_driver excalibur_wmi_driver = {
-	.driver   = { .name = "excalibur-wmi" },
-	.id_table = excalibur_wmi_id_table,
-	.probe    = excalibur_wmi_probe,
+	.driver       = { .name = "excalibur-wmi" },
+	.id_table     = excalibur_wmi_id_table,
+	.probe        = excalibur_wmi_probe,
+	.no_singleton = true,	/* required: driver must support multiple instances */
 };
 
 module_wmi_driver(excalibur_wmi_driver);

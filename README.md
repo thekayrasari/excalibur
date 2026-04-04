@@ -18,6 +18,7 @@ Provides per-zone RGB keyboard control, fan speed monitoring, and power plan man
 - [Power Plans](#power-plans)
 - [Profile Scripts](#profile-scripts)
 - [Persistent Boot Configuration](#persistent-boot-configuration)
+- [Control Panel](#control-panel)
 - [Debugging](#debugging)
 - [Adding New Models](#adding-new-models)
 - [Known Limitations](#known-limitations)
@@ -526,6 +527,92 @@ EOF
 
 sudo systemctl enable --now excalibur.service
 ```
+
+---
+
+## Control Panel
+
+A Textual-based TUI control center is provided in `control-panel.py` for interactive management of lighting, power plans, and fan monitoring.
+
+**Requirements:**
+
+```bash
+pip install textual
+```
+
+**Running the control panel:**
+
+```bash
+sudo python3 control-panel.py
+```
+
+(Sudo is required for LED and power plan changes; fan reading is read-only and works without elevation.)
+
+**Features:**
+
+### Dashboard Tab
+
+- **Fan Speed Display:** Real-time monitoring of CPU and GPU fan speeds with color-coded RPM indicators:
+  - **Green** (< 2000 RPM): Normal operation
+  - **Yellow** (2000–3999 RPM): Elevated fan activity
+  - **Red** (≥ 4000 RPM): High cooling demand
+  - **Stopped** (0 RPM): Fan not spinning
+
+- **Power Plan Quick Select:** One-click access to all four power plans (High Power, Gaming, Text Mode, Low Power) with visual feedback of the active plan.
+
+### Lighting Tab
+
+- **Zone Selection:** Target specific keyboard regions:
+  - `left`, `middle`, `right` — individual keyboard zones
+  - `corners` — corner RGB LEDs (fully independent)
+  - `all` — all zones at once
+
+- **Animation Modes:** Choose from `off`, `static`, `blink`, `fade`, `heartbeat`, `wave`, `random`, `rainbow`.
+
+- **Color Presets:** 11 preconfigured colors (White, Red, Orange, Yellow, Green, Cyan, Blue, Magenta, Purple, Pink, Off) with real-time color preview widget showing selected hex value.
+
+- **Brightness Levels:** Three-level brightness control (Off, Medium, Full).
+
+- **Hardware Constraint Handling:** The control panel automatically handles a firmware limitation where writing brightness to a single keyboard zone (left/middle/right) would overwrite adjacent keyboard zones' colors. Brightness writes are skipped for single-zone operations and are only applied when using the "all" zones target. For per-zone brightness control, users should always apply lighting to all keyboard zones together.
+
+### Power Tab
+
+- **Power Plan Management:** Detailed descriptions of each power plan:
+  - `High Power` — Maximum performance, maximum fan speed
+  - `Gaming` — Balanced performance and thermals
+  - `Text Mode` — Reduced performance, quiet operation
+  - `Low Power` — Maximum battery life, minimal fan activity
+
+### About Tab
+
+- **System Information:** Displays driver load status, hwmon device path, and LED base directory for diagnostic purposes.
+- **Source and License:** Quick reference to repository and GPL-2.0-or-later license.
+
+**Keyboard Shortcuts:**
+
+| Key | Action |
+|---|---|
+| `1` | Switch to Dashboard tab |
+| `2` | Switch to Lighting tab |
+| `3` | Switch to Power tab |
+| `r` | Refresh fan readings and power plan status |
+| `q` | Quit the application |
+
+**Sysfs Integration:**
+
+The control panel interfaces with the driver via sysfs:
+
+- **LED Control:** Reads/writes `/sys/class/leds/excalibur::kbd_backlight-{zone}/{color,mode,brightness}`
+- **Fan Monitoring:** Reads `/sys/class/hwmon/hwmon*/fan{1,2}_input` for CPU/GPU RPM
+- **Power Plans:** Reads/writes `/sys/class/hwmon/hwmon*/pwm1` (1 = High Power, 2 = Gaming, 3 = Text Mode, 4 = Low Power)
+
+**Permission Handling:**
+
+If the control panel is run without sudo, a warning bar appears at the top indicating which operations require elevation. Read-only operations (fan speed display) function normally; writes to LED and power plan attributes fail gracefully with permission error messages.
+
+**Building from Source:**
+
+The control panel is a standalone Python script with no compilation step. Simply ensure Textual is installed and run directly.
 
 ---
 

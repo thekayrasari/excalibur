@@ -1,19 +1,14 @@
 #!/bin/bash
 # ============================================================================
-#   ███████╗██╗  ██╗ ██████╗ █████╗ ██╗     ██╗██████╗ ██╗   ██╗██████╗
-#   ██╔════╝╚██╗██╔╝██╔════╝██╔══██╗██║     ██║██╔══██╗██║   ██║██╔══██╗
-#   █████╗   ╚███╔╝ ██║     ███████║██║     ██║██████╔╝██║   ██║██████╔╝
-#   ██╔══╝   ██╔██╗ ██║     ██╔══██║██║     ██║██╔══██╗██║   ██║██╔══██╗
-#   ███████╗██╔╝ ██╗╚██████╗██║  ██║███████╗██║██████╔╝╚██████╔╝██║  ██║
-#   ╚══════╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚══════╝╚═╝╚═════╝  ╚═════╝ ╚═╝  ╚═╝
-#
 #                     WMI Driver + Control Panel Installer
 #                       github.com/thekayrasari/excalibur
 # ============================================================================
 # Usage:
-#   sudo ./install.sh              — interactive wizard
-#   sudo ./install.sh install      — non-interactive full install
-#   sudo ./install.sh uninstall    — non-interactive full uninstall
+#   sudo ./install.sh                  — interactive wizard
+#   sudo ./install.sh install          — non-interactive manual install
+#   sudo ./install.sh uninstall        — non-interactive manual uninstall
+#   sudo ./install.sh dkms-install     — register + build via DKMS
+#   sudo ./install.sh dkms-uninstall   — remove DKMS registration
 # ============================================================================
 set -euo pipefail
 
@@ -30,10 +25,13 @@ NC='\033[0m'
 
 # ── Constants ─────────────────────────────────────────────────────────────────
 MODULE_NAME="excalibur"
+DKMS_NAME="excalibur-wmi"
+DKMS_VERSION="1.0.0"
 KO_FILE="${MODULE_NAME}.ko"
 LIB_MODULES="/lib/modules/$(uname -r)"
 INSTALL_DIR="${LIB_MODULES}/extra"
 MODULES_LOAD_DIR="/etc/modules-load.d"
+DKMS_SRC_DIR="/usr/src/${DKMS_NAME}-${DKMS_VERSION}"
 CONTROL_PANEL_SRC="control-panel.py"
 CONTROL_PANEL_DEST="/usr/local/lib/excalibur-control-panel.py"
 CONTROL_PANEL_BIN="/usr/local/bin/excalibur-panel"
@@ -48,14 +46,6 @@ MAKE_FLAGS=""     # extra flags forwarded to every make invocation
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 print_banner() {
-    echo -e "${C}"
-    echo '  ███████╗██╗  ██╗ ██████╗ █████╗ ██╗     ██╗██████╗ ██╗   ██╗██████╗ '
-    echo '  ██╔════╝╚██╗██╔╝██╔════╝██╔══██╗██║     ██║██╔══██╗██║   ██║██╔══██╗'
-    echo '  █████╗   ╚███╔╝ ██║     ███████║██║     ██║██████╔╝██║   ██║██████╔╝ '
-    echo '  ██╔══╝   ██╔██╗ ██║     ██╔══██║██║     ██║██╔══██╗██║   ██║██╔══██╗ '
-    echo '  ███████╗██╔╝ ██╗╚██████╗██║  ██║███████╗██║██████╔╝╚██████╔╝██║  ██║ '
-    echo '  ╚══════╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚══════╝╚═╝╚═════╝  ╚═════╝ ╚═╝  ╚═╝'
-    echo -e "${NC}"
     echo -e "  ${W}WMI Driver + Control Panel Installer${NC}   ${D}github.com/thekayrasari/excalibur${NC}"
     echo -e "  ${D}────────────────────────────────────────────────────────────────────${NC}"
     echo ""
@@ -149,9 +139,8 @@ check_build_tools() {
     local missing=()
 
     if [[ "$COMPILER" == "clang" ]]; then
-        command -v clang  &>/dev/null || missing+=("clang")
-        command -v make   &>/dev/null || missing+=("make")
-        # LLVM=1 requires llvm-ar, llvm-nm, etc. — all ship in the llvm package
+        command -v clang   &>/dev/null || missing+=("clang")
+        command -v make    &>/dev/null || missing+=("make")
         command -v llvm-ar &>/dev/null || missing+=("llvm")
         if [[ ${#missing[@]} -gt 0 ]]; then
             err "Missing build tools for clang build: ${missing[*]}"
@@ -177,9 +166,6 @@ check_kernel_headers() {
         return 0
     fi
     err "Kernel headers not found at ${LIB_MODULES}/build"
-    # On Arch-family with multiple kernel flavours (CachyOS especially), the
-    # headers package name matches the kernel package name with -headers appended.
-    # e.g. linux-cachyos → linux-cachyos-headers, linux-cachyos-lts → linux-cachyos-lts-headers
     if [[ "$DISTRO_ID" =~ ^(arch|manjaro|endeavouros|cachyos)$ ]]; then
         local kernel_pkg
         kernel_pkg=$(pacman -Qo "${LIB_MODULES}" 2>/dev/null | awk '{print $NF}' || true)
@@ -230,6 +216,18 @@ check_textual() {
     return 1
 }
 
+check_dkms() {
+    if command -v dkms &>/dev/null; then
+        ok "DKMS found: $(dkms --version 2>/dev/null | head -1)"
+        return 0
+    fi
+    warn "dkms not found"
+    if [[ -n "$PKG_INSTALL" ]]; then
+        info "Install with: ${PKG_INSTALL} dkms"
+    fi
+    return 1
+}
+
 install_textual() {
     step "Installing Textual Python library"
     if "$PYTHON_BIN" -m pip install textual 2>/dev/null; then
@@ -245,7 +243,7 @@ install_textual() {
     return 1
 }
 
-# ── Driver ────────────────────────────────────────────────────────────────────
+# ── Driver — manual build/install/uninstall ───────────────────────────────────
 build_driver() {
     step "Building kernel module (compiler: ${COMPILER})"
     if [[ ! -f "excalibur.c" || ! -f "Makefile" ]]; then
@@ -305,6 +303,85 @@ uninstall_driver() {
     fi
 }
 
+# ── Driver — DKMS build/install/uninstall ────────────────────────────────────
+#
+# DKMS keeps a copy of the sources in /usr/src/<name>-<version>/ and rebuilds
+# the module automatically whenever a new kernel is installed.  This is the
+# recommended persistent installation method for out-of-tree modules.
+
+install_dkms_driver() {
+    step "Registering ${DKMS_NAME}/${DKMS_VERSION} with DKMS"
+
+    if dkms status "${DKMS_NAME}/${DKMS_VERSION}" 2>/dev/null | grep -q "installed"; then
+        warn "${DKMS_NAME}/${DKMS_VERSION} is already installed in DKMS."
+        info "To upgrade: sudo ./install.sh dkms-uninstall && sudo ./install.sh dkms-install"
+        return 0
+    fi
+
+    # Copy sources into DKMS tree.
+    mkdir -p "${DKMS_SRC_DIR}"
+    for f in excalibur.c Makefile Kconfig dkms.conf; do
+        if [[ -f "$f" ]]; then
+            cp "$f" "${DKMS_SRC_DIR}/"
+        else
+            err "Required file '$f' not found in $(pwd)"
+            exit 1
+        fi
+    done
+    ok "Sources copied to ${DKMS_SRC_DIR}"
+
+    # Propagate clang flags into dkms.conf if the running kernel uses clang.
+    if [[ "$COMPILER" == "clang" && -n "$MAKE_FLAGS" ]]; then
+        # Append CC/LLVM flags to the MAKE line in the installed dkms.conf.
+        sed -i "s|^MAKE\[0\]=\"make|MAKE[0]=\"make ${MAKE_FLAGS}|" \
+            "${DKMS_SRC_DIR}/dkms.conf"
+        ok "Clang build flags injected into dkms.conf"
+    fi
+
+    dkms add -m "${DKMS_NAME}" -v "${DKMS_VERSION}"
+    ok "DKMS source registered"
+
+    step "Building module with DKMS (kernel $(uname -r))"
+    dkms build -m "${DKMS_NAME}" -v "${DKMS_VERSION}"
+    ok "Build complete"
+
+    step "Installing module with DKMS"
+    dkms install -m "${DKMS_NAME}" -v "${DKMS_VERSION}"
+    ok "Module installed via DKMS"
+
+    step "Configuring auto-load at boot"
+    mkdir -p "${MODULES_LOAD_DIR}"
+    echo "${MODULE_NAME}" > "${MODULES_LOAD_DIR}/${MODULE_NAME}.conf"
+    ok "Auto-load config: ${MODULES_LOAD_DIR}/${MODULE_NAME}.conf"
+
+    step "Loading module"
+    if modprobe "${MODULE_NAME}"; then
+        ok "Module loaded"
+    else
+        warn "modprobe failed — check: sudo dmesg | grep excalibur"
+    fi
+}
+
+uninstall_dkms_driver() {
+    step "Removing DKMS registration for ${DKMS_NAME}/${DKMS_VERSION}"
+
+    rmmod "${MODULE_NAME}" 2>/dev/null && ok "Module unloaded" || warn "Module was not loaded"
+
+    if dkms status "${DKMS_NAME}" 2>/dev/null | grep -q "${DKMS_VERSION}"; then
+        dkms remove "${DKMS_NAME}/${DKMS_VERSION}" --all
+        ok "DKMS registration removed"
+    else
+        warn "No DKMS entry found for ${DKMS_NAME}/${DKMS_VERSION}"
+    fi
+
+    rm -rf "${DKMS_SRC_DIR}"
+    ok "Source tree ${DKMS_SRC_DIR} removed"
+
+    rm -f "${MODULES_LOAD_DIR}/${MODULE_NAME}.conf"
+    depmod -a
+    ok "Module auto-load config removed"
+}
+
 # ── udev rules ────────────────────────────────────────────────────────────────
 install_udev_rules() {
     step "Installing udev rules"
@@ -352,7 +429,6 @@ install_control_panel() {
     chmod 644 "${CONTROL_PANEL_DEST}"
     ok "Control panel source: ${CONTROL_PANEL_DEST}"
 
-    # Write the launcher script with the correct python path baked in
     cat > "${CONTROL_PANEL_BIN}" <<LAUNCHER
 #!/bin/bash
 # Excalibur Control Panel launcher — auto-generated by installer
@@ -360,6 +436,12 @@ exec "${PYTHON_BIN}" "${CONTROL_PANEL_DEST}" "\$@"
 LAUNCHER
     chmod 755 "${CONTROL_PANEL_BIN}"
     ok "Launcher: ${CONTROL_PANEL_BIN}"
+}
+
+uninstall_control_panel() {
+    step "Removing control panel"
+    rm -f "${CONTROL_PANEL_DEST}" "${CONTROL_PANEL_BIN}" "${DESKTOP_FILE}"
+    ok "Control panel removed"
 }
 
 install_desktop_entry() {
@@ -382,12 +464,6 @@ DESKTOP
     ok "Desktop entry: ${DESKTOP_FILE}"
 }
 
-uninstall_control_panel() {
-    step "Removing control panel"
-    rm -f "${CONTROL_PANEL_DEST}" "${CONTROL_PANEL_BIN}" "${DESKTOP_FILE}"
-    ok "Control panel removed"
-}
-
 # ── Verify ────────────────────────────────────────────────────────────────────
 verify_install() {
     step "Verifying installation"
@@ -408,6 +484,12 @@ verify_install() {
         [[ "$(cat "$f" 2>/dev/null)" == "excalibur_wmi" ]] && hwmon_found=true && break
     done
     $hwmon_found && ok "hwmon device found" || warn "hwmon device not found yet"
+
+    if command -v dkms &>/dev/null; then
+        dkms status "${DKMS_NAME}" 2>/dev/null | grep -q "${DKMS_VERSION}" \
+            && ok "DKMS registration active (auto-rebuild on kernel upgrades)" \
+            || info "DKMS not active — manual install only"
+    fi
 
     [[ -x "${CONTROL_PANEL_BIN}" ]] \
         && ok "Control panel launcher ready: excalibur-panel" \
@@ -438,9 +520,13 @@ interactive_install() {
     check_python         || { err "Cannot continue without Python 3."; exit 1; }
     divider
 
-    # Driver
+    # Driver install method
     echo ""
     echo -e "  ${M}── Kernel Driver ─────────────────────────────────────────────${NC}"
+
+    INSTALL_DRIVER=false
+    USE_DKMS=false
+
     if lsmod 2>/dev/null | grep -q "^${MODULE_NAME}"; then
         warn "excalibur module is already loaded."
         ask "Reinstall / upgrade the kernel driver?" && INSTALL_DRIVER=true || INSTALL_DRIVER=false
@@ -449,9 +535,23 @@ interactive_install() {
         [[ "$INSTALL_DRIVER" == false ]] && warn "Skipping driver — hardware controls will not work."
     fi
 
+    if [[ "$INSTALL_DRIVER" == true ]]; then
+        echo ""
+        echo -e "  ${D}DKMS automatically rebuilds the module for every new kernel.${NC}"
+        if check_dkms 2>/dev/null; then
+            ask "Use DKMS for persistent install (recommended)?" \
+                && USE_DKMS=true || USE_DKMS=false
+        else
+            warn "DKMS not available — will use manual install."
+            USE_DKMS=false
+        fi
+    fi
+
     # Control panel
     echo ""
     echo -e "  ${M}── Control Panel ─────────────────────────────────────────────${NC}"
+    INSTALL_PANEL=false
+    INSTALL_TEXTUAL=false
     if ask "Install the Excalibur TUI control panel?"; then
         INSTALL_PANEL=true
         if check_textual; then
@@ -460,21 +560,20 @@ interactive_install() {
             warn "Textual is not installed."
             ask "Install Textual automatically?" && INSTALL_TEXTUAL=true || INSTALL_TEXTUAL=false
         fi
-    else
-        INSTALL_PANEL=false
-        INSTALL_TEXTUAL=false
     fi
 
     # udev
     echo ""
     echo -e "  ${M}── Permissions ───────────────────────────────────────────────${NC}"
     echo -e "  ${D}udev rules let you run the control panel without sudo.${NC}"
+    INSTALL_UDEV=false
     ask "Install udev rules (recommended)?" && INSTALL_UDEV=true || INSTALL_UDEV=false
     [[ "$INSTALL_UDEV" == false ]] && warn "You will need sudo to run the control panel."
 
     # Desktop
     echo ""
     echo -e "  ${M}── Desktop Integration ───────────────────────────────────────${NC}"
+    INSTALL_DESKTOP=false
     ask "Install a desktop entry (adds the app to your launcher)?" \
         && INSTALL_DESKTOP=true || INSTALL_DESKTOP=false
 
@@ -483,11 +582,17 @@ interactive_install() {
     echo -e "  ${M}── Summary ────────────────────────────────────────────────────${NC}"
     divider
     info "  Compiler: ${COMPILER}  (${MAKE_FLAGS:-no extra flags})"
-    [[ "$INSTALL_DRIVER"  == true ]] && info "  ✦ Kernel driver" || info "  ○ Kernel driver (skip)"
-    [[ "$INSTALL_TEXTUAL" == true ]] && info "  ✦ Textual library" || info "  ○ Textual (skip)"
-    [[ "$INSTALL_PANEL"   == true ]] && info "  ✦ Control panel  →  ${CONTROL_PANEL_BIN}" || info "  ○ Control panel (skip)"
-    [[ "$INSTALL_UDEV"    == true ]] && info "  ✦ udev rules (no-sudo access)" || info "  ○ udev rules (skip)"
-    [[ "$INSTALL_DESKTOP" == true ]] && info "  ✦ Desktop entry" || info "  ○ Desktop entry (skip)"
+    if [[ "$INSTALL_DRIVER" == true ]]; then
+        [[ "$USE_DKMS" == true ]] \
+            && info "  ✦ Kernel driver  →  DKMS (auto-rebuild)" \
+            || info "  ✦ Kernel driver  →  manual install"
+    else
+        info "  ○ Kernel driver (skip)"
+    fi
+    [[ "$INSTALL_TEXTUAL"  == true ]] && info "  ✦ Textual library"           || info "  ○ Textual (skip)"
+    [[ "$INSTALL_PANEL"    == true ]] && info "  ✦ Control panel  →  ${CONTROL_PANEL_BIN}" || info "  ○ Control panel (skip)"
+    [[ "$INSTALL_UDEV"     == true ]] && info "  ✦ udev rules (no-sudo access)" || info "  ○ udev rules (skip)"
+    [[ "$INSTALL_DESKTOP"  == true ]] && info "  ✦ Desktop entry"              || info "  ○ Desktop entry (skip)"
     divider
 
     if ! ask "Proceed with installation?"; then
@@ -496,7 +601,14 @@ interactive_install() {
     fi
 
     echo ""
-    [[ "$INSTALL_DRIVER"  == true ]] && { build_driver; install_driver; }
+    if [[ "$INSTALL_DRIVER" == true ]]; then
+        if [[ "$USE_DKMS" == true ]]; then
+            install_dkms_driver
+        else
+            build_driver
+            install_driver
+        fi
+    fi
     [[ "$INSTALL_TEXTUAL" == true ]] && install_textual
     [[ "$INSTALL_PANEL"   == true ]] && install_control_panel
     [[ "$INSTALL_UDEV"    == true ]] && install_udev_rules
@@ -524,7 +636,17 @@ interactive_install() {
 interactive_uninstall() {
     print_banner
     echo -e "  ${R}Uninstall mode${NC}\n"
-    ask "Remove the kernel driver?"    && uninstall_driver        || true
+
+    # Detect if DKMS was used and offer to remove that registration too.
+    if command -v dkms &>/dev/null && \
+       dkms status "${DKMS_NAME}" 2>/dev/null | grep -q "${DKMS_VERSION}"; then
+        ask "Remove DKMS registration for ${DKMS_NAME}?" \
+            && uninstall_dkms_driver || true
+    else
+        ask "Remove the kernel driver (manual install)?" \
+            && uninstall_driver || true
+    fi
+
     ask "Remove the control panel?"    && uninstall_control_panel || true
     ask "Remove udev rules?"           && uninstall_udev_rules    || true
     echo -e "\n  ${G}✔${NC}  Uninstall complete.\n"
@@ -533,12 +655,12 @@ interactive_uninstall() {
 # ── Entry point ───────────────────────────────────────────────────────────────
 require_root
 detect_distro
-detect_compiler   # must run after detect_distro (needs DISTRO_ID for header hints)
+detect_compiler
 
 case "${1:-}" in
     install)
         print_banner
-        step "Non-interactive install"
+        step "Non-interactive manual install"
         check_build_tools    || exit 1
         check_kernel_headers || exit 1
         check_python         || exit 1
@@ -558,11 +680,32 @@ case "${1:-}" in
         uninstall_udev_rules
         ok "Uninstall complete."
         ;;
+    dkms-install)
+        print_banner
+        step "Non-interactive DKMS install"
+        check_dkms           || exit 1
+        check_python         || exit 1
+        check_textual        || install_textual
+        install_dkms_driver
+        install_control_panel
+        install_udev_rules
+        install_desktop_entry
+        verify_install
+        ok "All done. Module will auto-rebuild on kernel upgrades."
+        ok "Run: excalibur-panel"
+        ;;
+    dkms-uninstall)
+        print_banner
+        uninstall_dkms_driver
+        uninstall_control_panel
+        uninstall_udev_rules
+        ok "DKMS uninstall complete."
+        ;;
     "")
         interactive_install
         ;;
     *)
-        echo -e "Usage: sudo $0 [install|uninstall]"
+        echo -e "Usage: sudo $0 [install|uninstall|dkms-install|dkms-uninstall]"
         exit 1
         ;;
 esac

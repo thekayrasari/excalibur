@@ -1,4 +1,15 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
+/*
+ * excalibur-wmi.c — WMI driver for Excalibur gaming laptops
+ *
+ * Provides per-zone RGB keyboard control, fan speed monitoring, and power
+ * plan management via the ACPI/WMI interface.
+ *
+ * Copyright (C) 2024 Kayra Sari <thekayrasari@gmail.com>
+ */
+
+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+
 #include <linux/acpi.h>
 #include <linux/bitfield.h>
 #include <linux/byteorder/generic.h>
@@ -15,7 +26,7 @@
 
 MODULE_AUTHOR("Kayra Sari <thekayrasari@gmail.com>");
 MODULE_DESCRIPTION("Excalibur Laptop WMI driver");
-MODULE_LICENSE("GPL");
+MODULE_LICENSE("GPL v2");
 
 #define EXCALIBUR_WMI_GUID		"644C5791-B7B0-4123-A90B-E93876E0DAAD"
 
@@ -119,6 +130,14 @@ static const char * const excalibur_mode_names[] = {
  * Data structures
  * ================================================================ */
 
+/*
+ * struct excalibur_wmi_args - WMI block I/O layout
+ *
+ * u16 a0, a1 sit at bytes 0–3 (no padding: 2+2 = 4, naturally aligned
+ * for the following u32 a2 at offset 4).  __packed is not needed, but
+ * the struct size must stay exactly sizeof(struct excalibur_wmi_args)
+ * to satisfy wmidev_block_set()'s acpi_buffer length check.
+ */
 struct excalibur_wmi_args {
 	u16 a0, a1;
 	u32 a2, a3, a4, a5, a6, rev0, rev1;
@@ -128,8 +147,10 @@ struct excalibur_wmi_args {
  * struct excalibur_zone - per-zone LED state cache
  * @cdev:    LED class device (exposes standard brightness sysfs attr)
  * @zone_id: hardware zone identifier (EXCALIBUR_ZONE_*)
- * @mode:    cached animation mode (excalibur_led_mode nibble 1–6)
- * @r/g/b:   cached color components (0–255 each)
+ * @mode:    cached animation mode (excalibur_led_mode nibble 0–7)
+ * @r:       cached red component (0–255)
+ * @g:       cached green component (0–255)
+ * @b:       cached blue component (0–255)
  *
  * The cdev.brightness field (0–2) caches the current brightness.
  * All fields are protected by excalibur_wmi_data.lock.
@@ -142,7 +163,7 @@ struct excalibur_zone {
 };
 
 /**
- * struct excalibur_wmi_data - driver state container (state pattern)
+ * struct excalibur_wmi_data - driver state container
  * @wdev:             WMI device handle
  * @has_raw_fanspeed: false on older models that need byte-swap
  * @lock:             mutex protecting all zone state + HW access
@@ -201,7 +222,7 @@ static const struct excalibur_quirk excalibur_quirk_new_gen = {
 
 static int dmi_matched(const struct dmi_system_id *dmi)
 {
-	pr_info("excalibur-wmi: identified model '%s'\n", dmi->ident);
+	pr_info("identified model '%s'\n", dmi->ident);
 	return 1;
 }
 
@@ -304,8 +325,8 @@ static int excalibur_query(struct excalibur_wmi_data *drv, u16 cmd,
 		return -EIO;
 
 	if (obj->type != ACPI_TYPE_BUFFER ||
-	    obj->buffer.length < sizeof(*out) ||	/* catches short/empty buffers */
-	    !obj->buffer.pointer) {			/* explicit NULL guard */
+	    obj->buffer.length < sizeof(*out) ||
+	    !obj->buffer.pointer) {
 		kfree(obj);
 		return -EIO;
 	}
@@ -513,6 +534,7 @@ static DEVICE_ATTR_RO(available_modes);
 
 /*
  * raw (debug, write-only):
+ *
  *   Sends a full 32-bit hex data word straight to this zone's hardware
  *   register, bypassing all field parsing. Use this to probe unknown
  *   mode/layout values on new hardware.
@@ -757,14 +779,13 @@ static const struct wmi_device_id excalibur_wmi_id_table[] = {
 	{ .guid_string = EXCALIBUR_WMI_GUID },
 	{ }
 };
+MODULE_DEVICE_TABLE(wmi, excalibur_wmi_id_table);
 
 static struct wmi_driver excalibur_wmi_driver = {
 	.driver       = { .name = "excalibur-wmi" },
 	.id_table     = excalibur_wmi_id_table,
 	.probe        = excalibur_wmi_probe,
-	.no_singleton = true,	/* required: driver must support multiple instances */
+	.no_singleton = true,
 };
 
 module_wmi_driver(excalibur_wmi_driver);
-
-MODULE_DEVICE_TABLE(wmi, excalibur_wmi_id_table);

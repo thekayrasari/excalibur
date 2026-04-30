@@ -1,0 +1,32 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
+# Kconfig for drivers/platform/x86/excalibur-wmi.c
+# (also used for out-of-tree builds — sourced by the out-of-tree Makefile)
+
+config EXCALIBUR_WMI
+	tristate "Excalibur gaming laptop WMI driver"
+	depends on ACPI_WMI
+	depends on LEDS_CLASS
+	depends on HWMON
+	depends on DMI
+	depends on X86
+	help
+	  Driver for Casper/Excalibur gaming laptops (G650, G670, G750,
+	  G770, G870, G900 and compatible models).
+
+	  Provides:
+	    - Per-zone RGB keyboard backlight control via the LED class
+	      (/sys/class/leds/excalibur::kbd_backlight-{left,middle,
+	       right,corners}/). Supports eight animation modes (off,
+	       static, blink, fade, heartbeat, wave, random, rainbow).
+	    - CPU and GPU fan speed monitoring via hwmon
+	      (/sys/class/hwmon/hwmonX/fan{1,2}_input).
+	    - Power plan selection (High Power / Gaming / Text Mode /
+	      Low Power) via hwmon pwm1.
+
+	  The driver communicates with the firmware through the ACPI/WMI
+	  interface identified by GUID 644C5791-B7B0-4123-A90B-E93876E0DAAD.
+
+	  To compile this driver as a module, choose M here. The module
+	  will be called excalibur.
+
+	  If unsure, say N.

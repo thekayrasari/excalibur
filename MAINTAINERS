@@ -1,0 +1,29 @@
+	EXCALIBUR WMI DRIVER
+	M:	Kayra Sari <thekayrasari@gmail.com>
+	L:	platform-driver-x86@vger.kernel.org
+	S:	Maintained
+	B:	https://github.com/thekayrasari/excalibur/issues
+	T:	git https://github.com/thekayrasari/excalibur.git
+	F:	Documentation/admin-guide/laptops/excalibur-wmi.rst
+	F:	drivers/platform/x86/excalibur-wmi.c
+
+--------------------------------------------------------------------------------
+NOTE FOR UPSTREAM SUBMISSION
+--------------------------------------------------------------------------------
+When submitting to the kernel tree:
+
+1. Rename excalibur.c → drivers/platform/x86/excalibur-wmi.c
+2. Add the Kconfig stanza above to drivers/platform/x86/Kconfig
+3. Add `obj-$(CONFIG_EXCALIBUR_WMI) += excalibur-wmi.o` to
+   drivers/platform/x86/Makefile
+4. Copy the MAINTAINERS block above (without this NOTE section) into
+   the kernel's top-level MAINTAINERS file, in alphabetical order by
+   subsystem name (between "EXCEED CARD DRIVER" and "EXFAT FILE SYSTEM").
+5. Add a Documentation/admin-guide/laptops/excalibur-wmi.rst file
+   (can be derived from the project README).
+6. Send patches to linux-kernel@vger.kernel.org and
+   platform-driver-x86@vger.kernel.org, CC the maintainer above.
+
+Mailing list archive: https://lore.kernel.org/platform-driver-x86/
+Patch submission guide: Documentation/process/submitting-patches.rst
+--------------------------------------------------------------------------------

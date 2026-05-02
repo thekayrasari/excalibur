@@ -96,7 +96,7 @@ detect_distro() {
             PKG_INSTALL="pacman -S --noconfirm"
             HEADERS_PKG="linux-headers"
             ;;
-        ubuntu|debian|linuxmint|pop)
+        ubuntu|debian|linuxmint|pop|pardus)
             INITRAMFS_CMD="update-initramfs -u"
             PKG_INSTALL="apt-get install -y"
             HEADERS_PKG="linux-headers-$(uname -r)"

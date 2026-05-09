@@ -284,6 +284,16 @@ static const struct dmi_system_id excalibur_dmi_list[] = {
 		},
 		.driver_data = (void *)&excalibur_quirk_new_gen,
 	},
+	{
+		.callback    = dmi_matched,
+		.ident       = "EXCALIBUR G911",
+		.matches     = {
+			DMI_MATCH(DMI_SYS_VENDOR,   "CASPER BILGISAYAR SISTEMLERI"),
+			DMI_MATCH(DMI_PRODUCT_NAME, "EXCALIBUR G911"),
+			DMI_MATCH(DMI_BIOS_VERSION, "CP132"),
+		},
+		.driver_data = (void *)&excalibur_quirk_new_gen,
+	},
 	{ }
 };
 

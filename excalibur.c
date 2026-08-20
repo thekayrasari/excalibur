@@ -662,7 +662,9 @@ static int excalibur_hwmon_read(struct device *dev, enum hwmon_sensor_types type
 	case hwmon_fan:
 		if (channel > 1)
 			return -EINVAL;
+		mutex_lock(&drv->lock);
 		ret = excalibur_query(drv, EXCALIBUR_GET_HARDWAREINFO, &out);
+		mutex_unlock(&drv->lock);
 		if (ret)
 			return ret;
 		*val = excalibur_decode_fanspeed(drv,
@@ -672,7 +674,9 @@ static int excalibur_hwmon_read(struct device *dev, enum hwmon_sensor_types type
 	case hwmon_pwm:
 		if (channel != 0 || !drv->has_powerplan)
 			return -EOPNOTSUPP;
+		mutex_lock(&drv->lock);
 		ret = excalibur_query(drv, EXCALIBUR_POWERPLAN, &out);
+		mutex_unlock(&drv->lock);
 		if (ret)
 			return ret;
 		*val = (long)out.a2;
@@ -700,13 +704,17 @@ static int excalibur_hwmon_write(struct device *dev, enum hwmon_sensor_types typ
 				 u32 attr, int channel, long val)
 {
 	struct excalibur_wmi_data *drv = dev_get_drvdata(dev->parent);
+	int ret;
 	if (type != hwmon_pwm || channel != 0 || !drv->has_powerplan)
 		return -EOPNOTSUPP;
 
 	if (val < EXCALIBUR_PLAN_HIGH_POWER || val > EXCALIBUR_PLAN_LOW_POWER)
 		return -EINVAL;
 
-	return excalibur_set(drv, EXCALIBUR_POWERPLAN, (u32)val, 0);
+	mutex_lock(&drv->lock);
+	ret = excalibur_set(drv, EXCALIBUR_POWERPLAN, (u32)val, 0);
+	mutex_unlock(&drv->lock);
+	return ret;
 }
 
 static const struct hwmon_ops excalibur_hwmon_ops = {

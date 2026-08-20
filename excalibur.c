@@ -166,12 +166,16 @@ struct excalibur_zone {
  * struct excalibur_wmi_data - driver state container
  * @wdev:             WMI device handle
  * @has_raw_fanspeed: false on older models that need byte-swap
+ * @has_led_control:   true only where LED writes are enabled
+ * @has_powerplan:     true only where power-plan access is enabled
  * @lock:             mutex protecting all zone state + HW access
  * @zones:            0=left 1=middle 2=right 3=corners
  */
 struct excalibur_wmi_data {
 	struct wmi_device	*wdev;
 	bool			 has_raw_fanspeed;
+	bool			 has_led_control;
+	bool			 has_powerplan;
 	struct mutex		 lock;
 	struct excalibur_zone	 zones[EXCALIBUR_ZONE_COUNT];
 };
@@ -205,15 +209,28 @@ static const char * const excalibur_zone_names[EXCALIBUR_ZONE_COUNT] = {
 
 struct excalibur_quirk {
 	bool has_raw_fanspeed;
+	bool has_led_control;
+	bool has_powerplan;
 };
 
 /* Quirk instances — referenced by both DMI and WMI id tables */
 static const struct excalibur_quirk excalibur_quirk_old_gen = {
 	.has_raw_fanspeed = false,
+	.has_led_control = true,
+	.has_powerplan = true,
 };
 
 static const struct excalibur_quirk excalibur_quirk_new_gen = {
 	.has_raw_fanspeed = true,
+	.has_led_control = true,
+	.has_powerplan = true,
+};
+
+/* Only fan monitoring has been verified on G870 BIOS CP121. */
+static const struct excalibur_quirk excalibur_quirk_g870_cp121 = {
+	.has_raw_fanspeed = true,
+	.has_led_control = false,
+	.has_powerplan = false,
 };
 
 /* ================================================================
@@ -263,6 +280,16 @@ static const struct dmi_system_id excalibur_dmi_list[] = {
 			DMI_MATCH(DMI_BIOS_VERSION, "CP131"),
 		},
 		.driver_data = (void *)&excalibur_quirk_old_gen,
+	},
+	{
+		.callback    = dmi_matched,
+		.ident       = "EXCALIBUR G870",
+		.matches     = {
+			DMI_MATCH(DMI_SYS_VENDOR,   "CASPER BILGISAYAR SISTEMLERI"),
+			DMI_MATCH(DMI_PRODUCT_NAME, "EXCALIBUR G870"),
+			DMI_MATCH(DMI_BIOS_VERSION, "CP121"),
+		},
+		.driver_data = (void *)&excalibur_quirk_g870_cp121,
 	},
 	{
 		.callback    = dmi_matched,
@@ -617,7 +644,9 @@ static umode_t excalibur_hwmon_is_visible(const void *drvdata,
 {
 	switch (type) {
 	case hwmon_fan:	return 0444;
-	case hwmon_pwm:	return 0644;
+	case hwmon_pwm:
+		return ((const struct excalibur_wmi_data *)drvdata)->has_powerplan ?
+			0644 : 0;
 	default:	return 0;
 	}
 }
@@ -641,7 +670,7 @@ static int excalibur_hwmon_read(struct device *dev, enum hwmon_sensor_types type
 		return 0;
 
 	case hwmon_pwm:
-		if (channel != 0)
+		if (channel != 0 || !drv->has_powerplan)
 			return -EOPNOTSUPP;
 		ret = excalibur_query(drv, EXCALIBUR_POWERPLAN, &out);
 		if (ret)
@@ -671,8 +700,7 @@ static int excalibur_hwmon_write(struct device *dev, enum hwmon_sensor_types typ
 				 u32 attr, int channel, long val)
 {
 	struct excalibur_wmi_data *drv = dev_get_drvdata(dev->parent);
-
-	if (type != hwmon_pwm || channel != 0)
+	if (type != hwmon_pwm || channel != 0 || !drv->has_powerplan)
 		return -EOPNOTSUPP;
 
 	if (val < EXCALIBUR_PLAN_HIGH_POWER || val > EXCALIBUR_PLAN_LOW_POWER)
@@ -731,6 +759,8 @@ static int excalibur_wmi_probe(struct wmi_device *wdev, const void *context)
 	 */
 	if (quirk) {
 		drv->has_raw_fanspeed = quirk->has_raw_fanspeed;
+		drv->has_led_control = quirk->has_led_control;
+		drv->has_powerplan = quirk->has_powerplan;
 		model_known = true;
 	} else {
 		const struct dmi_system_id *dmi_id;
@@ -739,9 +769,13 @@ static int excalibur_wmi_probe(struct wmi_device *wdev, const void *context)
 		if (dmi_id) {
 			quirk = dmi_id->driver_data;
 			drv->has_raw_fanspeed = quirk->has_raw_fanspeed;
+			drv->has_led_control = quirk->has_led_control;
+			drv->has_powerplan = quirk->has_powerplan;
 			model_known = true;
 		} else {
 			drv->has_raw_fanspeed = true; /* safe default */
+			drv->has_led_control = true; /* preserve existing behaviour */
+			drv->has_powerplan = true;
 			model_known = false;
 		}
 	}
@@ -751,7 +785,7 @@ static int excalibur_wmi_probe(struct wmi_device *wdev, const void *context)
 			 "Unrecognised model — defaulting has_raw_fanspeed=true. "
 			 "If fan speeds look wrong, see README: Adding New Models.\n");
 
-	for (i = 0; i < EXCALIBUR_ZONE_COUNT; i++) {
+	for (i = 0; drv->has_led_control && i < EXCALIBUR_ZONE_COUNT; i++) {
 		struct excalibur_zone *zone = &drv->zones[i];
 		bool is_corner = (i == EXCALIBUR_ZONE_COUNT - 1);
 
